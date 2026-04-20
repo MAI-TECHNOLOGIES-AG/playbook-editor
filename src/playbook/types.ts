@@ -9,11 +9,21 @@
  * a Check produces a Result (see models/Result/types.ts).
  */
 
-export type Dimension = 'CORPORATE_GOVERNANCE' | 'OWNERSHIP' | 'HR' | 'INTELLECTUAL_PROPERTY' | 'COMMERCIAL_AGREEMENTS' | 'REAL_ESTATE_EQUIPMENT' | 'INSURANCE' | 'LITIGATION' | 'DEBT_FINANCE' | 'REGULATORY_COMPLIANCE';
+export type Dimension =
+  | "CORPORATE_GOVERNANCE"
+  | "OWNERSHIP"
+  | "HR"
+  | "INTELLECTUAL_PROPERTY"
+  | "COMMERCIAL_AGREEMENTS"
+  | "REAL_ESTATE_EQUIPMENT"
+  | "INSURANCE"
+  | "LITIGATION"
+  | "DEBT_FINANCE"
+  | "REGULATORY_COMPLIANCE";
 
-export type FindingSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type FindingSeverity = "low" | "medium" | "high" | "critical";
 
-export type CheckBasis = 'statutory' | 'commercial';
+export type CheckBasis = "statutory" | "commercial";
 
 /**
  * Execution DAG constraint — a Check may only run if a parent Check
@@ -22,7 +32,7 @@ export type CheckBasis = 'statutory' | 'commercial';
 export type CheckPrerequisite = {
   checkId: string;
   /** The parent check must have produced this outcome for this check to run. */
-  requiredState: 'finding' | 'cleared';
+  requiredState: "finding" | "cleared";
 };
 
 /**
@@ -43,7 +53,7 @@ export type EvaluationRule = {
  * `scope: 'per_item'` — loop over `targetList`, call register_result per item.
  */
 export type CheckExecution = {
-  scope: 'global' | 'per_item';
+  scope: "global" | "per_item";
   /** State variable name containing the array of IDs to iterate (per_item only). */
   targetList?: string;
   /** State variable names the agent must persist for downstream checks. */

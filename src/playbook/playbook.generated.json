@@ -5,9 +5,7 @@
       "id": "shareholder-participation-rights",
       "name": "Shareholder Participation Rights",
       "description": "Evaluates whether the company protected shareholder rights during ordinary \nmeetings. Verifies meeting frequency, statutory deadlines, representation, \nnotice periods, agenda completeness, and board approvals to ensure valid \ncorporate governance and prevent voidable resolutions.\n",
-      "dimensions": [
-        "CORPORATE_GOVERNANCE"
-      ],
+      "dimensions": ["CORPORATE_GOVERNANCE"],
       "checks": [
         "ch-annual-meeting-existence",
         "ch-annual-meeting-timing",
@@ -26,9 +24,7 @@
       "severity": "high",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "recommendation": "Flag missing years for structural corporate defect. Assess risk of \norganizational deficiency claims.\n",
       "evaluation_rule": {
         "clear_condition": "Exactly 4 distinct ordinary AGM protocols are found, one for each of the last 4 financial years.\n",
@@ -36,9 +32,7 @@
       },
       "execution": {
         "scope": "global",
-        "context_exports": [
-          "agm_document_ids"
-        ],
+        "context_exports": ["agm_document_ids"],
         "steps": [
           {
             "step_1": "Determine the required 4-year range based on the current year."
@@ -62,9 +56,7 @@
       "severity": "high",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "recommendation": "Draft board resolution to ratify the late meeting. Confirm no shareholder \nchallenges have been filed regarding the delay.\n",
       "evaluation_rule": {
         "clear_condition": "The AGM execution date is <= 6 months after the company's financial year-end date.\n",
@@ -96,9 +88,7 @@
       "severity": "low",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "recommendation": "Proceed to formal notice and invitation verification.\n",
       "evaluation_rule": {
         "clear_condition": "The protocol explicitly states 100% of share capital is represented, or explicitly uses the term 'Universalversammlung'.\n",
@@ -107,9 +97,7 @@
       "execution": {
         "scope": "per_item",
         "target_list": "agm_document_ids",
-        "context_exports": [
-          "non_universal_agm_docs"
-        ],
+        "context_exports": ["non_universal_agm_docs"],
         "steps": [
           {
             "step_1": "For the current doc_id, call get_document_structure to locate the Attendance/Representation clause."
@@ -133,9 +121,7 @@
       "severity": "medium",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "prerequisites": [
         {
           "check_id": "ch-universal-representation",
@@ -176,9 +162,7 @@
       "severity": "medium",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "prerequisites": [
         {
           "check_id": "ch-universal-representation",
@@ -216,9 +200,7 @@
       "severity": "low",
       "dimension": "CORPORATE_GOVERNANCE",
       "basis": "statutory",
-      "jurisdictions": [
-        "CH"
-      ],
+      "jurisdictions": ["CH"],
       "recommendation": "Require immediate shareholder ratification of any dividend distributions. \nFlag potential director liability for unauthorized distributions.\n",
       "evaluation_rule": {
         "clear_condition": "Evidence exists (either in the AGM protocol or a prior Board Resolution) that the Board of Directors formally approved the financial statements and proposed the appropriation of profit/loss before the AGM vote.\n",

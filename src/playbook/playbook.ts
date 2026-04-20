@@ -20,16 +20,16 @@
  * these constants directly.
  */
 
-import playbook from './playbook.generated.json';
+import playbook from "./playbook.generated.json";
 import type {
-    Check,
-    CheckBasis,
-    CheckExecution,
-    CheckPrerequisite,
-    DiligenceTopic,
-    EvaluationRule,
-    FindingSeverity,
-} from './types';
+  Check,
+  CheckBasis,
+  CheckExecution,
+  CheckPrerequisite,
+  DiligenceTopic,
+  EvaluationRule,
+  FindingSeverity,
+} from "./types";
 
 // ============================================================================
 // Raw shape (snake_case, mirrors the yaml authoring conventions)
@@ -37,7 +37,7 @@ import type {
 
 export type RawCheckPrerequisite = {
   check_id: string;
-  required_state: 'finding' | 'cleared';
+  required_state: "finding" | "cleared";
 };
 
 export type RawEvaluationRule = {
@@ -48,7 +48,7 @@ export type RawEvaluationRule = {
 export type RawExecutionStep = Record<string, string>; // { step_1: "..." }
 
 export type RawExecution = {
-  scope: 'global' | 'per_item';
+  scope: "global" | "per_item";
   target_list?: string;
   context_exports?: string[];
   steps: RawExecutionStep[];
@@ -89,7 +89,7 @@ export type RawPlaybook = {
 function trimMultiline(s: string): string {
   // Yaml block scalars (`|`) preserve newlines. For our display strings we
   // want a single clean line — collapse internal whitespace.
-  return s.replace(/\s+/g, ' ').trim();
+  return s.replace(/\s+/g, " ").trim();
 }
 
 function mapPrerequisite(raw: RawCheckPrerequisite): CheckPrerequisite {
@@ -130,7 +130,7 @@ function mapCheck(raw: RawCheck): Check {
     label: raw.label,
     description: trimMultiline(raw.description),
     severity: raw.severity,
-    dimension: raw.dimension as Check['dimension'],
+    dimension: raw.dimension as Check["dimension"],
     basis: raw.basis,
     jurisdictions: raw.jurisdictions,
     prerequisites: raw.prerequisites?.map(mapPrerequisite),
@@ -149,7 +149,7 @@ function mapTopic(raw: RawTopic): DiligenceTopic {
     id: raw.id,
     name: raw.name,
     description: trimMultiline(raw.description),
-    dimensions: raw.dimensions as DiligenceTopic['dimensions'],
+    dimensions: raw.dimensions as DiligenceTopic["dimensions"],
     checkIds: raw.checks,
   };
 }

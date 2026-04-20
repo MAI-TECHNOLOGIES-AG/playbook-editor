@@ -1,0 +1,99 @@
+import type {
+  RawCheck,
+  RawExecutionStep,
+  RawPlaybook,
+  RawTopic,
+} from "@/playbook/playbook";
+import type { Dimension } from "@/playbook/types";
+
+export const LOCAL_STORAGE_KEY = "playbook-editor-state";
+
+export const DIMENSIONS: Dimension[] = [
+  "CORPORATE_GOVERNANCE",
+  "OWNERSHIP",
+  "HR",
+  "INTELLECTUAL_PROPERTY",
+  "COMMERCIAL_AGREEMENTS",
+  "REAL_ESTATE_EQUIPMENT",
+  "INSURANCE",
+  "LITIGATION",
+  "DEBT_FINANCE",
+  "REGULATORY_COMPLIANCE",
+];
+
+export type PlaybookData = RawPlaybook;
+
+export function isPlaybookData(value: unknown): value is PlaybookData {
+  if (!value || typeof value !== "object") return false;
+  const v = value as PlaybookData;
+  return Array.isArray(v.diligence_topics) && Array.isArray(v.checks);
+}
+
+export function clonePlaybook(data: PlaybookData): PlaybookData {
+  return structuredClone(data);
+}
+
+export function stepsToStrings(
+  steps: RawExecutionStep[] | undefined,
+): string[] {
+  if (!steps?.length) return [""];
+  return steps.map((obj) => {
+    const vals = Object.values(obj);
+    return vals[0] ?? "";
+  });
+}
+
+export function stringsToSteps(lines: string[]): RawExecutionStep[] {
+  return lines
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((text, i) => ({ [`step_${i + 1}`]: text }));
+}
+
+export function emptyCheck(
+  partial: Partial<RawCheck> & { id: string },
+): RawCheck {
+  return {
+    id: partial.id,
+    label: partial.label ?? "New check",
+    description: partial.description ?? "",
+    severity: partial.severity ?? "medium",
+    dimension: partial.dimension ?? "CORPORATE_GOVERNANCE",
+    basis: partial.basis ?? "statutory",
+    jurisdictions: partial.jurisdictions ?? [],
+    prerequisites: partial.prerequisites,
+    recommendation: partial.recommendation,
+    evaluation_rule: partial.evaluation_rule,
+    execution: partial.execution,
+  };
+}
+
+export function emptyTopic(
+  partial: Partial<RawTopic> & { id: string; dimensions: string[] },
+): RawTopic {
+  return {
+    id: partial.id,
+    name: partial.name ?? "New diligence topic",
+    description: partial.description ?? "",
+    dimensions: partial.dimensions,
+    checks: partial.checks ?? [],
+  };
+}
+
+export function newCheckId(): string {
+  return `check-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+export function newTopicId(): string {
+  return `topic-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+export function resolveTopicChecks(
+  topic: RawTopic,
+  checks: RawCheck[],
+): RawCheck[] {
+  const byId = new Map(checks.map((c) => [c.id, c]));
+  return topic.checks
+    .map((id) => byId.get(id))
+    .filter((c): c is RawCheck => c !== undefined);
+}
