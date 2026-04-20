@@ -1,6 +1,6 @@
+import { AgentationDev } from "@/components/AgentationDev";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AgentationDev } from "@/components/AgentationDev";
 import "./globals.css";
 
 const geistSans = Geist({

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 import { describe, it } from "vitest";
 import {
+  ensureUniqueCheckOwnership,
   isPlaybookData,
   type PlaybookData,
 } from "@/components/playbook-editor/playbook-data";
@@ -195,6 +196,57 @@ describe("checks[] list integrity", () => {
         );
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 3b — Unique check ownership
+// ---------------------------------------------------------------------------
+
+describe("ensureUniqueCheckOwnership", () => {
+  it("clones a check referenced by a second topic and assigns a new id", () => {
+    const data: PlaybookData = {
+      diligence_topics: [
+        {
+          id: "topic-a",
+          name: "A",
+          description: "",
+          dimensions: ["HR"],
+          checks: ["shared-check"],
+        },
+        {
+          id: "topic-b",
+          name: "B",
+          description: "",
+          dimensions: ["HR"],
+          checks: ["shared-check"],
+        },
+      ],
+      checks: [
+        {
+          id: "shared-check",
+          label: "Shared",
+          description: "",
+          severity: "medium",
+          dimension: "HR",
+          basis: "statutory",
+          jurisdictions: ["CH"],
+        },
+      ],
+    };
+    const out = ensureUniqueCheckOwnership(data);
+    assert.equal(out.diligence_topics[0].checks[0], "shared-check");
+    assert.notEqual(out.diligence_topics[1].checks[0], "shared-check");
+    assert.equal(out.checks.length, 2);
+    const clone = out.checks.find((c) => c.id === out.diligence_topics[1].checks[0]);
+    assert.ok(clone);
+    assert.equal(clone.label, "Shared");
+  });
+
+  it("is a no-op when each check already belongs to one topic", () => {
+    const data = fixturePlaybook("multi-dimension.yaml");
+    const out = ensureUniqueCheckOwnership(structuredClone(data));
+    assert.deepEqual(out, data);
   });
 });
 

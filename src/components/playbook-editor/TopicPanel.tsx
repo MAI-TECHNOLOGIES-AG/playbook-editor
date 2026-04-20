@@ -7,7 +7,6 @@ import {
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
-import type { ChangeEvent } from "react";
 import { useId, useLayoutEffect, useRef } from "react";
 
 function fieldClass() {
@@ -31,7 +30,6 @@ export type TopicPanelProps = {
   onCheckChange: (checkId: string, next: RawCheck) => void;
   onRemoveCheckFromTopic: (checkId: string) => void;
   onAddNewCheck: () => void;
-  onLinkExistingCheck: (checkId: string) => void;
   /** Increment when the parent adds a topic so the name field can be focused. */
   focusTopicNameFieldSignal?: number;
   /** Bumps with `expandCheckLabelTargetId` so that check expands and focuses its label. */
@@ -49,16 +47,12 @@ export function TopicPanel({
   onCheckChange,
   onRemoveCheckFromTopic,
   onAddNewCheck,
-  onLinkExistingCheck,
   focusTopicNameFieldSignal = 0,
   expandCheckLabelToken = 0,
   expandCheckLabelTargetId = null,
 }: TopicPanelProps) {
   const formUid = useId();
-  const linkSelectId = useId();
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const topicSet = new Set(topic.checks);
-  const linkable = allChecks.filter((c) => !topicSet.has(c.id));
 
   const toggleDimension = (dim: Dimension, checked: boolean) => {
     const next = new Set(topic.dimensions);
@@ -68,12 +62,6 @@ export function TopicPanel({
       ...topic,
       dimensions: DIMENSIONS.filter((d) => next.has(d)),
     });
-  };
-
-  const onImportSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value;
-    if (id) onLinkExistingCheck(id);
-    e.target.selectedIndex = 0;
   };
 
   useLayoutEffect(() => {
@@ -186,34 +174,16 @@ export function TopicPanel({
             >
               New check
             </button>
-            {linkable.length > 0 ? (
-              <select
-                id={linkSelectId}
-                className={fieldClass()}
-                defaultValue=""
-                onChange={onImportSelectChange}
-              >
-                <option value="" disabled>
-                  Link existing check…
-                </option>
-                {linkable.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label} ({c.id})
-                  </option>
-                ))}
-              </select>
-            ) : null}
           </div>
         </div>
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-          Removing a check drops it from this topic. If no other topic uses that
-          check, it is deleted from the playbook entirely.
+          Removing a check drops it from this topic and deletes it from the
+          playbook.
         </p>
         <div className="mt-4 space-y-3">
           {resolvedChecks.length === 0 ? (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900/40">
-              No checks on this topic yet. Add a new check or link an existing
-              one.
+              No checks on this topic yet. Add a new check.
             </p>
           ) : (
             resolvedChecks.map((check, index) => (

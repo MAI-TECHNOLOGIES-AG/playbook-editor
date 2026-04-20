@@ -20,7 +20,7 @@ const NEW_CHECK_SCROLL_ALIGN = 0.5;
 type CheckEditorProps = {
   check: RawCheck;
   onChange: (next: RawCheck) => void;
-  /** Unlink from this topic; deletes the check from the catalog if no topic still references it. */
+  /** Remove this check from the topic and delete it from the playbook. */
   onRemoveCheck: () => void;
   allChecks: RawCheck[];
   /** When true, show internal fields (check id, etc.). */

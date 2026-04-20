@@ -156,3 +156,76 @@ export function resolveTopicChecks(
     .map((id) => byId.get(id))
     .filter((c): c is RawCheck => c !== undefined);
 }
+
+function rewritePrereqsWithRemap(
+  check: RawCheck,
+  remap: Map<string, string>,
+): void {
+  if (!check.prerequisites?.length) return;
+  for (const p of check.prerequisites) {
+    let id = p.check_id;
+    let next = remap.get(id);
+    while (next !== undefined) {
+      id = next;
+      next = remap.get(id);
+    }
+    p.check_id = id;
+  }
+}
+
+/**
+ * Ensures each check id is listed by at most one diligence topic. Topics
+ * processed earlier keep canonical ids; later topics get deep-cloned checks
+ * with fresh ids. Prerequisites are rewritten using this topic's remap for
+ * checks cloned here and for checks that belonged to only one topic in the
+ * original data (safe in-place updates).
+ */
+export function ensureUniqueCheckOwnership(data: PlaybookData): PlaybookData {
+  const initialRefCount = new Map<string, number>();
+  for (const t of data.diligence_topics) {
+    for (const id of t.checks) {
+      initialRefCount.set(id, (initialRefCount.get(id) ?? 0) + 1);
+    }
+  }
+
+  const globallyClaimed = new Set<string>();
+  const nextChecks = [...data.checks];
+  const findCheck = (id: string) => nextChecks.find((c) => c.id === id);
+
+  const diligence_topics = data.diligence_topics.map((topic) => {
+    const remap = new Map<string, string>();
+    const nextTopicCheckIds: string[] = [];
+
+    for (const checkId of topic.checks) {
+      if (!globallyClaimed.has(checkId)) {
+        globallyClaimed.add(checkId);
+        nextTopicCheckIds.push(checkId);
+        continue;
+      }
+      const orig = findCheck(checkId);
+      if (!orig) {
+        nextTopicCheckIds.push(checkId);
+        continue;
+      }
+      const clone = structuredClone(orig) as RawCheck;
+      clone.id = uniqueCheckSlug(clone.label, nextChecks, undefined);
+      nextChecks.push(clone);
+      globallyClaimed.add(clone.id);
+      remap.set(checkId, clone.id);
+      nextTopicCheckIds.push(clone.id);
+    }
+
+    const clonedHere = new Set(remap.values());
+    for (const cid of nextTopicCheckIds) {
+      const ch = findCheck(cid);
+      if (!ch) continue;
+      const shouldRewrite =
+        clonedHere.has(cid) || (initialRefCount.get(cid) ?? 0) === 1;
+      if (shouldRewrite) rewritePrereqsWithRemap(ch, remap);
+    }
+
+    return { ...topic, checks: nextTopicCheckIds };
+  });
+
+  return { ...data, checks: nextChecks, diligence_topics };
+}

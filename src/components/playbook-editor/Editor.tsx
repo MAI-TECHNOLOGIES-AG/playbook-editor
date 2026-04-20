@@ -1,25 +1,26 @@
 "use client";
 
-import yaml from "js-yaml";
-import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import {
-  DIMENSIONS,
-  emptyCheck,
-  emptyPlaybook,
-  emptyTopic,
-  isPlaybookData,
-  LOCAL_STORAGE_KEY,
-  type PlaybookData,
-  resolveTopicChecks,
-  uniqueCheckSlug,
-  uniqueTopicSlug,
+    DIMENSIONS,
+    emptyCheck,
+    emptyPlaybook,
+    emptyTopic,
+    ensureUniqueCheckOwnership,
+    isPlaybookData,
+    LOCAL_STORAGE_KEY,
+    type PlaybookData,
+    resolveTopicChecks,
+    uniqueCheckSlug,
+    uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
 import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
+import yaml from "js-yaml";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 function applyCheckUpdate(
   data: PlaybookData,
@@ -115,7 +116,8 @@ export function PlaybookEditor() {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
-        if (isPlaybookData(parsed)) initial = parsed;
+        if (isPlaybookData(parsed))
+          initial = ensureUniqueCheckOwnership(parsed);
       }
     } catch {
       /* keep empty */
@@ -245,25 +247,6 @@ export function PlaybookEditor() {
     }
   }, [selectedTopicId]);
 
-  const handleLinkExistingCheck = useCallback(
-    (checkId: string) => {
-      const sid = selectedTopicId;
-      if (!sid) return;
-      setData((d) => {
-        if (!d) return d;
-        return {
-          ...d,
-          diligence_topics: d.diligence_topics.map((t) => {
-            if (t.id !== sid) return t;
-            if (t.checks.includes(checkId)) return t;
-            return { ...t, checks: [...t.checks, checkId] };
-          }),
-        };
-      });
-    },
-    [selectedTopicId],
-  );
-
   const addTopicUnderDimension = useCallback((dimension: Dimension) => {
     let newTopicId: string | null = null;
     flushSync(() => {
@@ -307,8 +290,9 @@ export function PlaybookEditor() {
           );
           return;
         }
-        setData(loaded);
-        setSelectedTopicId(loaded.diligence_topics[0]?.id ?? null);
+        const normalized = ensureUniqueCheckOwnership(loaded);
+        setData(normalized);
+        setSelectedTopicId(normalized.diligence_topics[0]?.id ?? null);
       } catch (err) {
         setImportError(
           err instanceof Error ? err.message : "Could not parse YAML.",
@@ -341,15 +325,15 @@ export function PlaybookEditor() {
 
   if (!data || !dimensionGroups) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-zinc-100 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-zinc-100 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
         Loading editor…
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-zinc-100 dark:bg-zinc-950">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+      <header className="fixed top-0 left-0 right-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -417,9 +401,9 @@ export function PlaybookEditor() {
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-0">
-        <aside className="w-full shrink-0 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:w-72">
-          <div className="max-h-[calc(100vh-3.5rem)] overflow-y-auto p-3">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 gap-0">
+        <aside className="flex fixed left-0 top-15 bottom-0 w-full shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:w-72">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {DIMENSIONS.map((dim) => (
               <div key={dim} className="mb-4">
                 <div className="flex items-center justify-between gap-1 px-1">
@@ -483,7 +467,7 @@ export function PlaybookEditor() {
           </div>
         </aside>
 
-        <main className="min-h-[calc(100vh-3.5rem)] flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="min-h-[calc(100vh-3.5rem)] mt-15 flex-1 overflow-y-auto p-4 sm:p-6 ml-72">
           {selectedTopic ? (
             <div className="mx-auto max-w-3xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
@@ -530,14 +514,13 @@ export function PlaybookEditor() {
                 onCheckChange={handleCheckChange}
                 onRemoveCheckFromTopic={handleRemoveCheckFromTopic}
                 onAddNewCheck={handleAddNewCheck}
-                onLinkExistingCheck={handleLinkExistingCheck}
                 focusTopicNameFieldSignal={focusTopicNameFieldSignal}
                 expandCheckLabelToken={expandCheckLabelToken}
                 expandCheckLabelTargetId={expandCheckLabelTargetId}
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/50 px-8 py-24 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/50 px-8 py-24 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
               <p className="max-w-md text-zinc-600 dark:text-zinc-400">
                 Import a YAML playbook, or add a topic under a dimension in the
                 sidebar. There is no built-in default catalog.

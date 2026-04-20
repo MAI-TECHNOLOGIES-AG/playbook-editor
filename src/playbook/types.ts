@@ -91,8 +91,8 @@ export type Check = {
  * DiligenceTopic — a coherent investigation area that groups Checks.
  *
  * A topic can span multiple dimensions (e.g. a "Change of Control" topic
- * might pull in HR, CORPORATE_GOVERNANCE, and COMMERCIAL_AGREEMENTS checks).
- * Checks may be referenced by multiple topics (many-to-many).
+ * might appear under HR, CORPORATE_GOVERNANCE, and COMMERCIAL_AGREEMENTS in
+ * the UI). Each check id belongs to at most one topic.
  */
 export type DiligenceTopic = {
   id: string;
