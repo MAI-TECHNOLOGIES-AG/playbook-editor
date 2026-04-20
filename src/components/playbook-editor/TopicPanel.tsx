@@ -50,7 +50,6 @@ export function TopicPanel({
   const linkSelectId = useId();
   const topicSet = new Set(topic.checks);
   const linkable = allChecks.filter((c) => !topicSet.has(c.id));
-  const allCheckIds = allChecks.map((c) => c.id);
 
   const toggleDimension = (dim: Dimension, checked: boolean) => {
     const next = new Set(topic.dimensions);
@@ -191,13 +190,14 @@ export function TopicPanel({
               one.
             </p>
           ) : (
-            resolvedChecks.map((check) => (
+            resolvedChecks.map((check, index) => (
               <CheckEditor
-                key={check.id}
+                key={`${topic.id}-${index}`}
                 check={check}
                 onChange={(next) => onCheckChange(check.id, next)}
                 onRemoveCheck={() => onRemoveCheckFromTopic(check.id)}
-                allCheckIds={allCheckIds}
+                allChecks={allChecks}
+                displayTechFields={displayTechFields}
               />
             ))
           )}

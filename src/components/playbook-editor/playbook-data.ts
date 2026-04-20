@@ -88,20 +88,25 @@ export function emptyTopic(
   };
 }
 
-export function newCheckId(): string {
-  return `check-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-/** Kebab-case id segment suitable for YAML `id` (topic slug). */
-export function slugifyTopicName(name: string): string {
-  const s = name
+function slugifyToSegment(input: string, emptyFallback: string): string {
+  const s = input
     .normalize("NFKD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
     .trim()
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/gu, "");
-  return s || "topic";
+  return s || emptyFallback;
+}
+
+/** Kebab-case id segment suitable for YAML topic `id`. */
+export function slugifyTopicName(name: string): string {
+  return slugifyToSegment(name, "topic");
+}
+
+/** Kebab-case id segment suitable for YAML check `id`. */
+export function slugifyCheckLabel(label: string): string {
+  return slugifyToSegment(label, "check");
 }
 
 /**
@@ -116,8 +121,26 @@ export function uniqueTopicSlug(
   const otherIds = new Set(
     allTopics.filter((t) => t.id !== currentTopicId).map((t) => t.id),
   );
-  let base = slugifyTopicName(name);
-  if (!base) base = "topic";
+  const base = slugifyTopicName(name);
+  if (!otherIds.has(base)) return base;
+  let n = 2;
+  while (otherIds.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+/**
+ * Unique check `id` from display label. Excludes `currentCheckId` when
+ * resolving collisions (same pattern as `uniqueTopicSlug`).
+ */
+export function uniqueCheckSlug(
+  label: string,
+  allChecks: RawCheck[],
+  currentCheckId: string | undefined,
+): string {
+  const otherIds = new Set(
+    allChecks.filter((c) => c.id !== currentCheckId).map((c) => c.id),
+  );
+  const base = slugifyCheckLabel(label);
   if (!otherIds.has(base)) return base;
   let n = 2;
   while (otherIds.has(`${base}-${n}`)) n += 1;

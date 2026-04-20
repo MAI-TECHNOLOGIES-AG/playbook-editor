@@ -10,9 +10,9 @@ import {
   emptyTopic,
   isPlaybookData,
   LOCAL_STORAGE_KEY,
-  newCheckId,
   type PlaybookData,
   resolveTopicChecks,
+  uniqueCheckSlug,
   uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
@@ -208,16 +208,18 @@ export function PlaybookEditor() {
   const handleAddNewCheck = useCallback(() => {
     const sid = selectedTopicId;
     if (!sid) return;
-    const id = newCheckId();
-    const topic = data?.diligence_topics.find((t) => t.id === sid);
-    const dim =
-      topic?.dimensions[0] ?? ("CORPORATE_GOVERNANCE" satisfies Dimension);
-    const newCheck = emptyCheck({
-      id,
-      dimension: dim,
-    });
     setData((d) => {
       if (!d) return d;
+      const topic = d.diligence_topics.find((t) => t.id === sid);
+      const dim =
+        topic?.dimensions[0] ?? ("CORPORATE_GOVERNANCE" satisfies Dimension);
+      const defaultLabel = "New check";
+      const id = uniqueCheckSlug(defaultLabel, d.checks, undefined);
+      const newCheck = emptyCheck({
+        id,
+        label: defaultLabel,
+        dimension: dim,
+      });
       return {
         ...d,
         checks: [...d.checks, newCheck],
@@ -226,7 +228,7 @@ export function PlaybookEditor() {
         ),
       };
     });
-  }, [data?.diligence_topics, selectedTopicId]);
+  }, [selectedTopicId]);
 
   const handleLinkExistingCheck = useCallback(
     (checkId: string) => {

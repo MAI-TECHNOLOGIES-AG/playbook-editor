@@ -6,6 +6,7 @@ import {
   DIMENSIONS,
   stepsToStrings,
   stringsToSteps,
+  uniqueCheckSlug,
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck } from "@/playbook/playbook";
 import type { CheckBasis, Dimension, FindingSeverity } from "@/playbook/types";
@@ -18,7 +19,9 @@ type CheckEditorProps = {
   onChange: (next: RawCheck) => void;
   /** Unlink from this topic; deletes the check from the catalog if no topic still references it. */
   onRemoveCheck: () => void;
-  allCheckIds: string[];
+  allChecks: RawCheck[];
+  /** When true, show internal fields (check id, etc.). */
+  displayTechFields: boolean;
 };
 
 function fieldClass() {
@@ -33,10 +36,13 @@ export function CheckEditor({
   check,
   onChange,
   onRemoveCheck,
-  allCheckIds,
+  allChecks,
+  displayTechFields,
 }: CheckEditorProps) {
+  const formUid = useId();
   const panelId = useId();
   const [open, setOpen] = useState(false);
+  const allCheckIds = allChecks.map((c) => c.id);
 
   const set = (patch: Partial<RawCheck>) => {
     onChange({ ...check, ...patch });
@@ -132,9 +138,11 @@ export function CheckEditor({
             {open ? "▼" : "▶"}
           </span>
           <span className="truncate">{check.label || check.id}</span>
-          <span className="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5 font-mono text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-            {check.id}
-          </span>
+          {displayTechFields ? (
+            <span className="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5 font-mono text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+              {check.id}
+            </span>
+          ) : null}
         </button>
         <button
           type="button"
@@ -151,44 +159,55 @@ export function CheckEditor({
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${check.id}-id`}>
-                Check ID
-              </label>
-              <input
-                id={`${check.id}-id`}
-                className={fieldClass()}
-                value={check.id}
-                onChange={(e) => set({ id: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${check.id}-label`}>
+              <label className={labelClass()} htmlFor={`${formUid}-label`}>
                 Label
               </label>
               <input
-                id={`${check.id}-label`}
+                id={`${formUid}-label`}
                 className={fieldClass()}
                 value={check.label}
-                onChange={(e) => set({ label: e.target.value })}
+                onChange={(e) => {
+                  const label = e.target.value;
+                  const id = uniqueCheckSlug(label, allChecks, check.id);
+                  onChange({ ...check, label, id });
+                }}
               />
+              {displayTechFields ? (
+                <div className="mt-2">
+                  <label className={labelClass()} htmlFor={`${formUid}-id`}>
+                    Check ID
+                  </label>
+                  <input
+                    id={`${formUid}-id`}
+                    readOnly
+                    tabIndex={-1}
+                    className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                    value={check.id}
+                  />
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    Generated from the label. Adjust the label if you need a
+                    different id.
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${check.id}-desc`}>
+              <label className={labelClass()} htmlFor={`${formUid}-desc`}>
                 Description
               </label>
               <textarea
-                id={`${check.id}-desc`}
+                id={`${formUid}-desc`}
                 className={`${fieldClass()} min-h-[88px] font-sans`}
                 value={check.description}
                 onChange={(e) => set({ description: e.target.value })}
               />
             </div>
             <div>
-              <label className={labelClass()} htmlFor={`${check.id}-sev`}>
+              <label className={labelClass()} htmlFor={`${formUid}-sev`}>
                 Severity
               </label>
               <select
-                id={`${check.id}-sev`}
+                id={`${formUid}-sev`}
                 className={fieldClass()}
                 value={check.severity}
                 onChange={(e) =>
@@ -203,11 +222,11 @@ export function CheckEditor({
               </select>
             </div>
             <div>
-              <label className={labelClass()} htmlFor={`${check.id}-dim`}>
+              <label className={labelClass()} htmlFor={`${formUid}-dim`}>
                 Dimension
               </label>
               <select
-                id={`${check.id}-dim`}
+                id={`${formUid}-dim`}
                 className={fieldClass()}
                 value={check.dimension}
                 onChange={(e) =>
@@ -222,11 +241,11 @@ export function CheckEditor({
               </select>
             </div>
             <div>
-              <label className={labelClass()} htmlFor={`${check.id}-basis`}>
+              <label className={labelClass()} htmlFor={`${formUid}-basis`}>
                 Basis
               </label>
               <select
-                id={`${check.id}-basis`}
+                id={`${formUid}-basis`}
                 className={fieldClass()}
                 value={check.basis}
                 onChange={(e) => set({ basis: e.target.value as CheckBasis })}
@@ -239,11 +258,11 @@ export function CheckEditor({
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${check.id}-jur`}>
+              <label className={labelClass()} htmlFor={`${formUid}-jur`}>
                 Jurisdictions (comma or newline, ISO codes)
               </label>
               <textarea
-                id={`${check.id}-jur`}
+                id={`${formUid}-jur`}
                 className={`${fieldClass()} min-h-[56px]`}
                 value={jurisdictionsText}
                 onChange={updateJurisdictions}
@@ -251,11 +270,11 @@ export function CheckEditor({
               />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${check.id}-rec`}>
+              <label className={labelClass()} htmlFor={`${formUid}-rec`}>
                 Recommendation
               </label>
               <textarea
-                id={`${check.id}-rec`}
+                id={`${formUid}-rec`}
                 className={`${fieldClass()} min-h-[72px]`}
                 value={check.recommendation ?? ""}
                 onChange={(e) =>
@@ -294,12 +313,12 @@ export function CheckEditor({
                     <div className="min-w-[140px] flex-1">
                       <label
                         className={labelClass()}
-                        htmlFor={`${check.id}-pr-${i}-id`}
+                        htmlFor={`${formUid}-pr-${i}-id`}
                       >
                         Parent check
                       </label>
                       <select
-                        id={`${check.id}-pr-${i}-id`}
+                        id={`${formUid}-pr-${i}-id`}
                         className={fieldClass()}
                         value={pr.check_id}
                         onChange={(e) =>
@@ -316,12 +335,12 @@ export function CheckEditor({
                     <div className="w-36">
                       <label
                         className={labelClass()}
-                        htmlFor={`${check.id}-pr-${i}-st`}
+                        htmlFor={`${formUid}-pr-${i}-st`}
                       >
                         Required state
                       </label>
                       <select
-                        id={`${check.id}-pr-${i}-st`}
+                        id={`${formUid}-pr-${i}-st`}
                         className={fieldClass()}
                         value={pr.required_state}
                         onChange={(e) =>
@@ -355,11 +374,11 @@ export function CheckEditor({
             </h4>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className={labelClass()} htmlFor={`${check.id}-clear`}>
+                <label className={labelClass()} htmlFor={`${formUid}-clear`}>
                   Clear condition
                 </label>
                 <textarea
-                  id={`${check.id}-clear`}
+                  id={`${formUid}-clear`}
                   className={`${fieldClass()} min-h-[72px]`}
                   value={check.evaluation_rule?.clear_condition ?? ""}
                   onChange={(e) =>
@@ -374,11 +393,11 @@ export function CheckEditor({
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelClass()} htmlFor={`${check.id}-finding`}>
+                <label className={labelClass()} htmlFor={`${formUid}-finding`}>
                   Finding condition
                 </label>
                 <textarea
-                  id={`${check.id}-finding`}
+                  id={`${formUid}-finding`}
                   className={`${fieldClass()} min-h-[72px]`}
                   value={check.evaluation_rule?.finding_condition ?? ""}
                   onChange={(e) =>
@@ -418,11 +437,11 @@ export function CheckEditor({
             {check.execution ? (
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass()} htmlFor={`${check.id}-scope`}>
+                  <label className={labelClass()} htmlFor={`${formUid}-scope`}>
                     Scope
                   </label>
                   <select
-                    id={`${check.id}-scope`}
+                    id={`${formUid}-scope`}
                     className={fieldClass()}
                     value={check.execution.scope}
                     onChange={(e) => {
@@ -441,14 +460,11 @@ export function CheckEditor({
                   </select>
                 </div>
                 <div>
-                  <label
-                    className={labelClass()}
-                    htmlFor={`${check.id}-target`}
-                  >
+                  <label className={labelClass()} htmlFor={`${formUid}-target`}>
                     Target list (per_item)
                   </label>
                   <input
-                    id={`${check.id}-target`}
+                    id={`${formUid}-target`}
                     className={fieldClass()}
                     value={check.execution.target_list ?? ""}
                     onChange={(e) => {
@@ -465,22 +481,22 @@ export function CheckEditor({
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={labelClass()} htmlFor={`${check.id}-ctx`}>
+                  <label className={labelClass()} htmlFor={`${formUid}-ctx`}>
                     Context exports (comma or newline)
                   </label>
                   <textarea
-                    id={`${check.id}-ctx`}
+                    id={`${formUid}-ctx`}
                     className={`${fieldClass()} min-h-[56px]`}
                     value={contextExportsText}
                     onChange={updateContextExports}
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={labelClass()} htmlFor={`${check.id}-steps`}>
+                  <label className={labelClass()} htmlFor={`${formUid}-steps`}>
                     Steps (one per line → YAML step_1, step_2, …)
                   </label>
                   <textarea
-                    id={`${check.id}-steps`}
+                    id={`${formUid}-steps`}
                     className={`${fieldClass()} min-h-[120px] font-mono text-xs`}
                     value={stepLines}
                     onChange={updateSteps}
