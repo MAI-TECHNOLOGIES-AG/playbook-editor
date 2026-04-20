@@ -1,15 +1,15 @@
 "use client";
 
-import type { ChangeEvent } from "react";
-import { useId, useState } from "react";
 import {
-  DIMENSIONS,
-  stepsToStrings,
-  stringsToSteps,
-  uniqueCheckSlug,
+    DIMENSIONS,
+    stepsToStrings,
+    stringsToSteps,
+    uniqueCheckSlug,
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck } from "@/playbook/playbook";
 import type { CheckBasis, Dimension, FindingSeverity } from "@/playbook/types";
+import type { ChangeEvent } from "react";
+import { useId, useState } from "react";
 
 const SEVERITIES: FindingSeverity[] = ["low", "medium", "high", "critical"];
 const BASES: CheckBasis[] = ["statutory", "commercial"];
@@ -159,9 +159,17 @@ export function CheckEditor({
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${formUid}-label`}>
-                Label
-              </label>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <label className={labelClass()} htmlFor={`${formUid}-label`}>
+                  Label
+                </label>
+                <span
+                  className="font-mono text-[11px] font-normal normal-case tracking-normal text-zinc-500 dark:text-zinc-400"
+                  title="Check ID"
+                >
+                  {check.id}
+                </span>
+              </div>
               <input
                 id={`${formUid}-label`}
                 className={fieldClass()}

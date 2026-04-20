@@ -1,14 +1,14 @@
 "use client";
 
-import type { ChangeEvent } from "react";
-import { useId } from "react";
 import { CheckEditor } from "@/components/playbook-editor/CheckEditor";
 import {
-  DIMENSIONS,
-  uniqueTopicSlug,
+    DIMENSIONS,
+    uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
+import type { ChangeEvent } from "react";
+import { useId } from "react";
 
 function fieldClass() {
   return "mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400";
@@ -78,9 +78,17 @@ export function TopicPanel({
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className={labelClass()} htmlFor={`${formUid}-tname`}>
-              Name
-            </label>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <label className={labelClass()} htmlFor={`${formUid}-tname`}>
+                Name
+              </label>
+              <span
+                className="font-mono text-[11px] font-normal normal-case tracking-normal text-zinc-500 dark:text-zinc-400"
+                title="Topic ID"
+              >
+                {topic.id}
+              </span>
+            </div>
             <input
               id={`${formUid}-tname`}
               className={fieldClass()}
