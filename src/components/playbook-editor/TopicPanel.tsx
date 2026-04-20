@@ -22,6 +22,8 @@ export type TopicPanelProps = {
   topic: RawTopic;
   /** All topics (for unique slug generation from name). */
   allTopics: RawTopic[];
+  /** When true, show internal / technical fields (topic id, etc.). */
+  displayTechFields: boolean;
   /** Checks in the same order as `topic.checks` */
   resolvedChecks: RawCheck[];
   allChecks: RawCheck[];
@@ -35,6 +37,7 @@ export type TopicPanelProps = {
 export function TopicPanel({
   topic,
   allTopics,
+  displayTechFields,
   resolvedChecks,
   allChecks,
   onTopicChange,
@@ -89,22 +92,24 @@ export function TopicPanel({
                 onTopicChange({ ...topic, name, id });
               }}
             />
-            <div className="mt-2">
-              <label className={labelClass()} htmlFor={`${formUid}-tid`}>
-                Topic ID
-              </label>
-              <input
-                id={`${formUid}-tid`}
-                readOnly
-                tabIndex={-1}
-                className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
-                value={topic.id}
-              />
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Generated from the name. Adjust the name if you need a different
-                id.
-              </p>
-            </div>
+            {displayTechFields ? (
+              <div className="mt-2">
+                <label className={labelClass()} htmlFor={`${formUid}-tid`}>
+                  Topic ID
+                </label>
+                <input
+                  id={`${formUid}-tid`}
+                  readOnly
+                  tabIndex={-1}
+                  className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                  value={topic.id}
+                />
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Generated from the name. Adjust the name if you need a
+                  different id.
+                </p>
+              </div>
+            ) : null}
           </div>
           <div className="sm:col-span-2">
             <label className={labelClass()} htmlFor={`${formUid}-tdesc`}>

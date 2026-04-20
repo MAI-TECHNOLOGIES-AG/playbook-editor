@@ -99,6 +99,7 @@ export function PlaybookEditor() {
   const [hydrated, setHydrated] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [displayTechFields, setDisplayTechFields] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -349,6 +350,15 @@ export function PlaybookEditor() {
                 placeholder="0.2"
               />
             </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <input
+                type="checkbox"
+                className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400 dark:border-zinc-600"
+                checked={displayTechFields}
+                onChange={(e) => setDisplayTechFields(e.target.checked)}
+              />
+              Display tech fields
+            </label>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -494,6 +504,7 @@ export function PlaybookEditor() {
               <TopicPanel
                 topic={selectedTopic}
                 allTopics={data.diligence_topics}
+                displayTechFields={displayTechFields}
                 resolvedChecks={resolvedChecks}
                 allChecks={data.checks}
                 onTopicChange={handleTopicChange}
