@@ -54,9 +54,9 @@ export function CheckEditor({
   );
   const stepLines = stepsToStrings(check.execution?.steps).join("\n");
 
-  const updateJurisdictions = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  const updateJurisdictions = (e: ChangeEvent<HTMLInputElement>) => {
     const list = e.target.value
-      .split(/[,\n]/)
+      .split(",")
       .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
     set({ jurisdictions: list.length ? list : undefined });
@@ -211,6 +211,23 @@ export function CheckEditor({
               />
             </div>
             <div>
+              <label className={labelClass()} htmlFor={`${formUid}-basis`}>
+                Basis
+              </label>
+              <select
+                id={`${formUid}-basis`}
+                className={fieldClass()}
+                value={check.basis}
+                onChange={(e) => set({ basis: e.target.value as CheckBasis })}
+              >
+                {BASES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className={labelClass()} htmlFor={`${formUid}-sev`}>
                 Severity
               </label>
@@ -249,32 +266,19 @@ export function CheckEditor({
               </select>
             </div>
             <div>
-              <label className={labelClass()} htmlFor={`${formUid}-basis`}>
-                Basis
-              </label>
-              <select
-                id={`${formUid}-basis`}
-                className={fieldClass()}
-                value={check.basis}
-                onChange={(e) => set({ basis: e.target.value as CheckBasis })}
-              >
-                {BASES.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
               <label className={labelClass()} htmlFor={`${formUid}-jur`}>
-                Jurisdictions (comma or newline, ISO codes)
+                Jurisdictions
               </label>
-              <textarea
+              <input
                 id={`${formUid}-jur`}
-                className={`${fieldClass()} min-h-[56px]`}
+                readOnly
+                tabIndex={-1}
+                type="text"
+                className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
                 value={jurisdictionsText}
                 onChange={updateJurisdictions}
-                placeholder="CH, DE"
+                placeholder="CH, DE (comma-separated ISO)"
+                autoComplete="off"
               />
             </div>
             <div className="sm:col-span-2">

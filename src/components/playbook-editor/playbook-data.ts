@@ -68,7 +68,7 @@ export function emptyCheck(
     severity: partial.severity ?? "medium",
     dimension: partial.dimension ?? "CORPORATE_GOVERNANCE",
     basis: partial.basis ?? "statutory",
-    jurisdictions: partial.jurisdictions ?? [],
+    jurisdictions: partial.jurisdictions ?? ["CH"],
     prerequisites: partial.prerequisites,
     recommendation: partial.recommendation,
     evaluation_rule: partial.evaluation_rule,
