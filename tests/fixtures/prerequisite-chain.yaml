@@ -1,0 +1,89 @@
+version: "0.2"
+
+diligence_topics:
+  - id: chained-checks-topic
+    name: Chained Checks Topic
+    description: |
+      Three checks forming a dependency chain: check-b depends on check-a
+      having a finding, and check-c depends on check-b being cleared.
+    dimensions:
+      - CORPORATE_GOVERNANCE
+    checks:
+      - chain-check-a
+      - chain-check-b
+      - chain-check-c
+
+checks:
+  - id: chain-check-a
+    label: Chain Check A (Root)
+    description: |
+      The root check in the chain. No prerequisites. Its outcome gates check-b.
+    severity: high
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+    evaluation_rule:
+      clear_condition: >
+        All required root documents are present and correctly dated.
+      finding_condition: >
+        One or more root documents are missing or incorrectly dated.
+    execution:
+      scope: global
+      context_exports:
+        - chain_a_finding_ids
+      steps:
+        - step_1: "Search for all root documents in scope."
+        - step_2: "Evaluate each against the evaluation_rule."
+        - step_3: "Export failing document IDs to chain_a_finding_ids."
+        - step_4: "Call register_result(status)."
+
+  - id: chain-check-b
+    label: Chain Check B (Requires A Finding)
+    description: |
+      Runs only when check-a produced a finding. Its cleared outcome gates check-c.
+    severity: medium
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+    prerequisites:
+      - check_id: chain-check-a
+        required_state: finding
+    evaluation_rule:
+      clear_condition: >
+        A valid remediation document exists for each item flagged by check-a.
+      finding_condition: >
+        No remediation document can be found for one or more items flagged by check-a.
+    execution:
+      scope: per_item
+      target_list: chain_a_finding_ids
+      steps:
+        - step_1: "For the current doc_id from chain_a_finding_ids, search for a remediation document."
+        - step_2: "Evaluate the remediation document against the evaluation_rule."
+        - step_3: "Call register_result(target_id=doc_id)."
+
+  - id: chain-check-c
+    label: Chain Check C (Requires B Cleared)
+    description: |
+      Final check in the chain. Only runs when check-b is cleared, confirming
+      the remediation path is complete.
+    severity: low
+    dimension: CORPORATE_GOVERNANCE
+    basis: contractual
+    jurisdictions:
+      - CH
+    prerequisites:
+      - check_id: chain-check-b
+        required_state: cleared
+    evaluation_rule:
+      clear_condition: >
+        The remediation is fully signed off and filed in the deal room.
+      finding_condition: >
+        The remediation sign-off is missing or unsigned.
+    execution:
+      scope: global
+      steps:
+        - step_1: "Verify the sign-off document is present in the deal room."
+        - step_2: "Confirm all required signatories have signed."
+        - step_3: "Call register_result(status)."

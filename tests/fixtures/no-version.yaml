@@ -1,0 +1,19 @@
+diligence_topics:
+  - id: basic-topic
+    name: Basic Topic
+    description: |
+      A minimal diligence topic with a single check and no optional fields.
+    dimensions:
+      - CORPORATE_GOVERNANCE
+    checks:
+      - bare-minimum-check
+
+checks:
+  - id: bare-minimum-check
+    label: Bare Minimum Check
+    description: |
+      A check with only required fields. No recommendation, no evaluation_rule,
+      no execution, no prerequisites, no jurisdictions.
+    severity: medium
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory

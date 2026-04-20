@@ -1,0 +1,53 @@
+version: "0.2"
+
+diligence_topics:
+  - id: execution-variant-topic
+    name: Execution Variant Topic
+    description: |
+      Contains one globally-scoped check and one per-item-scoped check to
+      verify both execution shapes round-trip correctly without field bleed.
+    dimensions:
+      - CORPORATE_GOVERNANCE
+    checks:
+      - global-scope-check
+      - per-item-scope-check
+
+checks:
+  - id: global-scope-check
+    label: Global Scope Check
+    description: |
+      Uses scope: global with context_exports. Must not emit target_list
+      after a round-trip.
+    severity: high
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+    execution:
+      scope: global
+      context_exports:
+        - collected_doc_ids
+        - summary_flags
+      steps:
+        - step_1: "Search across the entire document set for matching records."
+        - step_2: "Collect all matching document IDs."
+        - step_3: "Export collected IDs to collected_doc_ids and flags to summary_flags."
+        - step_4: "Call register_result(status)."
+
+  - id: per-item-scope-check
+    label: Per-Item Scope Check
+    description: |
+      Uses scope: per_item with a target_list. Must not emit context_exports
+      after a round-trip.
+    severity: medium
+    dimension: CORPORATE_GOVERNANCE
+    basis: contractual
+    jurisdictions:
+      - CH
+    execution:
+      scope: per_item
+      target_list: collected_doc_ids
+      steps:
+        - step_1: "For the current document in collected_doc_ids, call get_document_facts."
+        - step_2: "Apply the relevant business rule to the extracted facts."
+        - step_3: "Call register_result(target_id=doc_id) with the outcome."

@@ -1,0 +1,86 @@
+version: "0.2"
+
+diligence_topics:
+  - id: employment-and-governance
+    name: Employment and Governance
+    description: |
+      Covers both corporate governance obligations and HR compliance checks.
+      Spans two dimensions because employment disputes often surface during
+      corporate governance reviews.
+    dimensions:
+      - CORPORATE_GOVERNANCE
+      - HR
+    checks:
+      - board-composition-check
+      - employment-contracts-check
+      - key-person-clauses-check
+
+  - id: ip-and-commercial
+    name: IP and Commercial Agreements
+    description: |
+      Reviews intellectual property ownership alongside key commercial contracts
+      to identify encumbrances that could affect deal value.
+    dimensions:
+      - INTELLECTUAL_PROPERTY
+      - COMMERCIAL_AGREEMENTS
+    checks:
+      - ip-ownership-check
+      - license-agreement-check
+
+checks:
+  - id: board-composition-check
+    label: Board Composition
+    description: |
+      Verifies the board meets the minimum statutory composition requirements.
+    severity: high
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+      - DE
+
+  - id: employment-contracts-check
+    label: Employment Contracts on File
+    description: |
+      Confirms signed employment contracts exist for all key employees.
+    severity: medium
+    dimension: HR
+    basis: contractual
+    jurisdictions:
+      - CH
+
+  - id: key-person-clauses-check
+    label: Key-Person Clauses
+    description: |
+      Checks whether employment contracts contain enforceable key-person
+      and non-compete clauses.
+    severity: low
+    dimension: HR
+    basis: contractual
+    jurisdictions:
+      - CH
+      - AT
+      - DE
+
+  - id: ip-ownership-check
+    label: IP Ownership Verification
+    description: |
+      Confirms all material intellectual property is assigned to the company
+      and not retained by founders or contractors.
+    severity: high
+    dimension: INTELLECTUAL_PROPERTY
+    basis: contractual
+    jurisdictions:
+      - CH
+
+  - id: license-agreement-check
+    label: Third-Party License Agreements
+    description: |
+      Reviews inbound and outbound software license agreements for
+      change-of-control provisions that could be triggered by the deal.
+    severity: medium
+    dimension: COMMERCIAL_AGREEMENTS
+    basis: contractual
+    jurisdictions:
+      - CH
+      - US

@@ -1,0 +1,77 @@
+version: "0.2"
+
+diligence_topics:
+  - id: full-coverage-topic
+    name: Full Coverage Topic
+    description: |
+      A topic that exercises every optional field on a check: prerequisites,
+      recommendation, evaluation_rule, and execution with context_exports.
+    dimensions:
+      - CORPORATE_GOVERNANCE
+    checks:
+      - gate-check
+      - full-check
+
+checks:
+  - id: gate-check
+    label: Gate Check
+    description: |
+      A prerequisite check whose outcome gates the main full-check.
+    severity: high
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+    recommendation: |
+      Remediate any identified deficiencies before proceeding to the next check.
+    evaluation_rule:
+      clear_condition: >
+        All required documents are present and dated within the review period.
+      finding_condition: >
+        One or more required documents are missing or outside the review period.
+    execution:
+      scope: global
+      context_exports:
+        - gate_document_ids
+      steps:
+        - step_1: "Search for all documents matching the gate criteria."
+        - step_2: "Validate each document against the evaluation_rule."
+        - step_3: "Export matching document IDs to gate_document_ids."
+        - step_4: "Call register_result(status)."
+
+  - id: full-check
+    label: Full Check With All Optional Fields
+    description: |
+      Exercises every optional field: prerequisites reference gate-check,
+      recommendation is provided, evaluation_rule has both conditions,
+      and execution uses global scope with context_exports.
+    severity: medium
+    dimension: CORPORATE_GOVERNANCE
+    basis: statutory
+    jurisdictions:
+      - CH
+    prerequisites:
+      - check_id: gate-check
+        required_state: finding
+    recommendation: |
+      Document all findings in the deal memo. Escalate critical items to
+      senior counsel for review before signing.
+    evaluation_rule:
+      clear_condition: >
+        All sampled items comply with the applicable statutory requirements
+        and no material deficiencies are identified.
+      finding_condition: >
+        One or more sampled items contain a material deficiency or fail to
+        meet the applicable statutory requirements.
+    execution:
+      scope: global
+      context_exports:
+        - full_check_findings
+        - full_check_cleared_ids
+      steps:
+        - step_1: "Retrieve gate_document_ids from context."
+        - step_2: "For each document, call get_document_facts to extract relevant metadata."
+        - step_3: "Apply the evaluation_rule to the extracted metadata."
+        - step_4: "Separate results into findings and cleared buckets."
+        - step_5: "Export finding doc_ids to full_check_findings and cleared doc_ids to full_check_cleared_ids."
+        - step_6: "Call register_result(status) with a summary."
