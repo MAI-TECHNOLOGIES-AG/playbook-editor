@@ -3,6 +3,7 @@
 import { CheckEditor } from "@/components/playbook-editor/CheckEditor";
 import {
     DIMENSIONS,
+    uniqueManualTopicId,
     uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
@@ -112,14 +113,22 @@ export function TopicPanel({
                 </label>
                 <input
                   id={`${formUid}-tid`}
-                  readOnly
-                  tabIndex={-1}
-                  className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                  className={`${fieldClass()} font-mono text-zinc-700 dark:text-zinc-300`}
                   value={topic.id}
+                  onChange={(e) => {
+                    const id = uniqueManualTopicId(
+                      e.target.value,
+                      allTopics,
+                      topic.id,
+                    );
+                    onTopicChange({ ...topic, id });
+                  }}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  Generated from the name. Adjust the name if you need a
-                  different id.
+                  Kept in sync when you edit the name; you can also edit the id
+                  directly (kebab-case, must be unique).
                 </p>
               </div>
             ) : null}

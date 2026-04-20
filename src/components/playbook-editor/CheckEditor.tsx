@@ -5,6 +5,7 @@ import {
     stepsToStrings,
     stringsToSteps,
     uniqueCheckSlug,
+    uniqueManualCheckId,
 } from "@/components/playbook-editor/playbook-data";
 import type { RawCheck } from "@/playbook/playbook";
 import type { CheckBasis, Dimension, FindingSeverity } from "@/playbook/types";
@@ -67,7 +68,14 @@ export function CheckEditor({
       .split(",")
       .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
-    set({ jurisdictions: list.length ? list : undefined });
+    const jurisdictions = list.length ? list : undefined;
+    const id = uniqueCheckSlug(
+      check.label,
+      allChecks,
+      check.id,
+      jurisdictions,
+    );
+    set({ jurisdictions, id });
   };
 
   const updateContextExports = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -213,7 +221,12 @@ export function CheckEditor({
                 value={check.label}
                 onChange={(e) => {
                   const label = e.target.value;
-                  const id = uniqueCheckSlug(label, allChecks, check.id);
+                  const id = uniqueCheckSlug(
+                    label,
+                    allChecks,
+                    check.id,
+                    check.jurisdictions,
+                  );
                   onChange({ ...check, label, id });
                 }}
               />
@@ -224,14 +237,23 @@ export function CheckEditor({
                   </label>
                   <input
                     id={`${formUid}-id`}
-                    readOnly
-                    tabIndex={-1}
-                    className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                    className={`${fieldClass()} font-mono text-zinc-700 dark:text-zinc-300`}
                     value={check.id}
+                    onChange={(e) => {
+                      const id = uniqueManualCheckId(
+                        e.target.value,
+                        allChecks,
+                        check.id,
+                      );
+                      onChange({ ...check, id });
+                    }}
+                    autoComplete="off"
+                    spellCheck={false}
                   />
                   <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    Generated from the label. Adjust the label if you need a
-                    different id.
+                    Updated from the label (with a jurisdiction prefix) unless you
+                    set it here; must be unique in the playbook. References update
+                    automatically.
                   </p>
                 </div>
               ) : null}

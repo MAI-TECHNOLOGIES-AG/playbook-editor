@@ -209,7 +209,9 @@ export function PlaybookEditor() {
       return applyCheckUpdate(d, checkId, next);
     });
     if (next.id !== checkId) {
-      /* selection keys use check.id in lists — no selection state for checks */
+      setExpandCheckLabelTargetId((prev) =>
+        prev === checkId ? next.id : prev,
+      );
     }
   }, []);
 

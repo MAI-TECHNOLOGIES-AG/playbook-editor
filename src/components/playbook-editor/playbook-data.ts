@@ -110,6 +110,18 @@ export function slugifyCheckLabel(label: string): string {
 }
 
 /**
+ * Prefix for check ids from the first jurisdiction code (comma-separated list),
+ * lowercased with a trailing dash. Defaults to `"ch-"` when absent or empty
+ * (jurisdiction `"CH"`).
+ */
+export function jurisdictionIdPrefix(jurisdictions: string[] | undefined): string {
+  const raw = jurisdictions?.map((j) => j.trim()).find((j) => j.length > 0);
+  const first = raw ?? "CH";
+  const code = slugifyToSegment(first, "ch");
+  return `${code}-`;
+}
+
+/**
  * Unique topic id from display name. Reserves `currentTopicId` when resolving
  * collisions so renaming keeps a stable slot until the new slug is taken.
  */
@@ -129,22 +141,63 @@ export function uniqueTopicSlug(
 }
 
 /**
- * Unique check `id` from display label. Excludes `currentCheckId` when
- * resolving collisions (same pattern as `uniqueTopicSlug`).
+ * Unique check `id` from display label and jurisdiction-derived prefix.
+ * Excludes `currentCheckId` when resolving collisions (same pattern as
+ * `uniqueTopicSlug`). Uses the first jurisdiction, or `CH` → `ch-`, when
+ * `jurisdictions` is missing or empty.
  */
 export function uniqueCheckSlug(
   label: string,
   allChecks: RawCheck[],
   currentCheckId: string | undefined,
+  jurisdictions?: string[],
 ): string {
   const otherIds = new Set(
     allChecks.filter((c) => c.id !== currentCheckId).map((c) => c.id),
   );
-  const base = slugifyCheckLabel(label);
+  const prefix = jurisdictionIdPrefix(jurisdictions);
+  const slugPart = slugifyCheckLabel(label);
+  const base = `${prefix}${slugPart}`;
   if (!otherIds.has(base)) return base;
   let n = 2;
   while (otherIds.has(`${base}-${n}`)) n += 1;
   return `${base}-${n}`;
+}
+
+function uniqueSlugFromManualInput(
+  raw: string,
+  reservedIds: Set<string>,
+  emptyFallback: string,
+): string {
+  const base = slugifyToSegment(raw.trim(), emptyFallback);
+  if (!reservedIds.has(base)) return base;
+  let n = 2;
+  while (reservedIds.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+/** Normalize and uniquify a topic id typed by the user (kebab-case). */
+export function uniqueManualTopicId(
+  raw: string,
+  allTopics: RawTopic[],
+  currentTopicId: string | undefined,
+): string {
+  const reserved = new Set(
+    allTopics.filter((t) => t.id !== currentTopicId).map((t) => t.id),
+  );
+  return uniqueSlugFromManualInput(raw, reserved, "topic");
+}
+
+/** Normalize and uniquify a check id typed by the user (kebab-case). */
+export function uniqueManualCheckId(
+  raw: string,
+  allChecks: RawCheck[],
+  currentCheckId: string | undefined,
+): string {
+  const reserved = new Set(
+    allChecks.filter((c) => c.id !== currentCheckId).map((c) => c.id),
+  );
+  return uniqueSlugFromManualInput(raw, reserved, "check");
 }
 
 export function resolveTopicChecks(
@@ -208,7 +261,12 @@ export function ensureUniqueCheckOwnership(data: PlaybookData): PlaybookData {
         continue;
       }
       const clone = structuredClone(orig) as RawCheck;
-      clone.id = uniqueCheckSlug(clone.label, nextChecks, undefined);
+      clone.id = uniqueCheckSlug(
+        clone.label,
+        nextChecks,
+        undefined,
+        clone.jurisdictions,
+      );
       nextChecks.push(clone);
       globallyClaimed.add(clone.id);
       remap.set(checkId, clone.id);
