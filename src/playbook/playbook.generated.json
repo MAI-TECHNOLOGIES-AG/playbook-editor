@@ -1,0 +1,250 @@
+{
+  "version": "0.2",
+  "diligence_topics": [
+    {
+      "id": "shareholder-participation-rights",
+      "name": "Shareholder Participation Rights",
+      "description": "Evaluates whether the company protected shareholder rights during ordinary \nmeetings. Verifies meeting frequency, statutory deadlines, representation, \nnotice periods, agenda completeness, and board approvals to ensure valid \ncorporate governance and prevent voidable resolutions.\n",
+      "dimensions": [
+        "CORPORATE_GOVERNANCE"
+      ],
+      "checks": [
+        "ch-annual-meeting-existence",
+        "ch-annual-meeting-timing",
+        "ch-universal-representation",
+        "ch-statutory-notice-period",
+        "ch-invitation-agenda-completeness",
+        "ch-profit-loss-board-approval"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "ch-annual-meeting-existence",
+      "label": "Annual Meeting Existence (4-Years)",
+      "description": "Verifies there is evidence of at least one ordinary shareholders meeting \nconducted per year for the past 4 years.\n",
+      "severity": "high",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "recommendation": "Flag missing years for structural corporate defect. Assess risk of \norganizational deficiency claims.\n",
+      "evaluation_rule": {
+        "clear_condition": "Exactly 4 distinct ordinary AGM protocols are found, one for each of the last 4 financial years.\n",
+        "finding_condition": "Any of the last 4 financial years is missing an ordinary AGM protocol.\n"
+      },
+      "execution": {
+        "scope": "global",
+        "context_exports": [
+          "agm_document_ids"
+        ],
+        "steps": [
+          {
+            "step_1": "Determine the required 4-year range based on the current year."
+          },
+          {
+            "step_2": "Execute lexical_search for 'Generalversammlung' or 'AGM' filtered by the required years."
+          },
+          {
+            "step_3": "Evaluate the search results against the evaluation_rule."
+          },
+          {
+            "step_4": "Call register_result(status). If clear, attach the 4 doc_ids. If finding, specify missing years. Export found doc_ids to agm_document_ids."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ch-annual-meeting-timing",
+      "label": "Annual Meeting Timing",
+      "description": "The annual shareholder meeting must be conducted strictly after the financial \nyear-end and within 6 months of that date.\n",
+      "severity": "high",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "recommendation": "Draft board resolution to ratify the late meeting. Confirm no shareholder \nchallenges have been filed regarding the delay.\n",
+      "evaluation_rule": {
+        "clear_condition": "The AGM execution date is <= 6 months after the company's financial year-end date.\n",
+        "finding_condition": "The AGM execution date is > 6 months after the company's financial year-end date, or no date can be established.\n"
+      },
+      "execution": {
+        "scope": "per_item",
+        "target_list": "agm_document_ids",
+        "steps": [
+          {
+            "step_1": "Call get_deal_fact(key='financial_year_end')."
+          },
+          {
+            "step_2": "For the current doc_id, call get_document_facts to extract the meeting execution date."
+          },
+          {
+            "step_3": "Calculate the exact calendar difference between the two dates."
+          },
+          {
+            "step_4": "Evaluate against the evaluation_rule and call register_result(target_id=doc_id)."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ch-universal-representation",
+      "label": "Universal Shareholder Representation",
+      "description": "Evaluates if all shareholders were present or validly represented at the \nmeeting (Universalversammlung). A 'finding' here indicates not all \nshareholders were represented, which triggers formal notice requirements.\n",
+      "severity": "low",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "recommendation": "Proceed to formal notice and invitation verification.\n",
+      "evaluation_rule": {
+        "clear_condition": "The protocol explicitly states 100% of share capital is represented, or explicitly uses the term 'Universalversammlung'.\n",
+        "finding_condition": "Less than 100% of share capital is represented, or attendance metrics are missing.\n"
+      },
+      "execution": {
+        "scope": "per_item",
+        "target_list": "agm_document_ids",
+        "context_exports": [
+          "non_universal_agm_docs"
+        ],
+        "steps": [
+          {
+            "step_1": "For the current doc_id, call get_document_structure to locate the Attendance/Representation clause."
+          },
+          {
+            "step_2": "Call read_content_node using the identified node_id."
+          },
+          {
+            "step_3": "Evaluate the extracted text against the evaluation_rule."
+          },
+          {
+            "step_4": "Call register_result(target_id=doc_id). If status is 'finding', export this doc_id to non_universal_agm_docs."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ch-statutory-notice-period",
+      "label": "Statutory Notice Period",
+      "description": "Ensures an invitation to the shareholders' meeting was sent to all \nunrepresented shareholders at least 20 days before the meeting.\n",
+      "severity": "medium",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "prerequisites": [
+        {
+          "check_id": "ch-universal-representation",
+          "required_state": "finding"
+        }
+      ],
+      "recommendation": "Resolutions may be voidable. Assess shareholder challenge risk and \nevaluate cure mechanisms.\n",
+      "evaluation_rule": {
+        "clear_condition": "The dispatch date of the meeting invitation is >= the required notice period (20 days, or custom statuten period) prior to the meeting date.\n",
+        "finding_condition": "The dispatch date is < the required notice period, or no invitation evidence exists.\n"
+      },
+      "execution": {
+        "scope": "per_item",
+        "target_list": "non_universal_agm_docs",
+        "steps": [
+          {
+            "step_1": "Call get_deal_fact(key='custom_agm_notice_period'). If null, default to 20 days."
+          },
+          {
+            "step_2": "Call get_document_facts for the current doc_id to get the meeting date."
+          },
+          {
+            "step_3": "Execute lexical_search for 'Einladung' (Invitation) linked to this meeting date."
+          },
+          {
+            "step_4": "Calculate the calendar days between the invitation dispatch date and the meeting date."
+          },
+          {
+            "step_5": "Evaluate against the evaluation_rule and call register_result(target_id=doc_id)."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ch-invitation-agenda-completeness",
+      "label": "Invitation Agenda Completeness",
+      "description": "Verifies that the dispatched meeting invitation contains a formal agenda \noutlining the items to be voted upon.\n",
+      "severity": "medium",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "prerequisites": [
+        {
+          "check_id": "ch-universal-representation",
+          "required_state": "finding"
+        }
+      ],
+      "recommendation": "Unannounced agenda items cannot be validly resolved. Identify all \nresolutions passed without prior agenda notice for ratification.\n",
+      "evaluation_rule": {
+        "clear_condition": "The meeting invitation includes a specific list of agenda items to be voted upon.\n",
+        "finding_condition": "The invitation lacks an agenda, or no invitation document can be found.\n"
+      },
+      "execution": {
+        "scope": "per_item",
+        "target_list": "non_universal_agm_docs",
+        "steps": [
+          {
+            "step_1": "Execute lexical_search for the invitation corresponding to the current AGM doc_id."
+          },
+          {
+            "step_2": "If found, call read_document_pages or read_content_node to extract the invitation text."
+          },
+          {
+            "step_3": "Evaluate the text against the evaluation_rule."
+          },
+          {
+            "step_4": "Call register_result(target_id=doc_id)."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ch-profit-loss-board-approval",
+      "label": "Board Approval of Profit and Loss",
+      "description": "Confirms the profit and losses were formally approved and proposed by \nthe board prior to the shareholder meeting.\n",
+      "severity": "low",
+      "dimension": "CORPORATE_GOVERNANCE",
+      "basis": "statutory",
+      "jurisdictions": [
+        "CH"
+      ],
+      "recommendation": "Require immediate shareholder ratification of any dividend distributions. \nFlag potential director liability for unauthorized distributions.\n",
+      "evaluation_rule": {
+        "clear_condition": "Evidence exists (either in the AGM protocol or a prior Board Resolution) that the Board of Directors formally approved the financial statements and proposed the appropriation of profit/loss before the AGM vote.\n",
+        "finding_condition": "No evidence of prior board approval is found.\n"
+      },
+      "execution": {
+        "scope": "per_item",
+        "target_list": "agm_document_ids",
+        "steps": [
+          {
+            "step_1": "For the current doc_id, call get_document_structure to locate the 'Appropriation of Profit' or 'Financial Statements' clause."
+          },
+          {
+            "step_2": "Call read_content_node to evaluate if the text explicitly references a prior board proposal."
+          },
+          {
+            "step_3": "If insufficient evidence, execute lexical_search for Board Resolutions matching the relevant financial year."
+          },
+          {
+            "step_4": "Evaluate all gathered evidence against the evaluation_rule."
+          },
+          {
+            "step_5": "Call register_result(target_id=doc_id)."
+          }
+        ]
+      }
+    }
+  ]
+}
