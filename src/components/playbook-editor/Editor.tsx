@@ -17,6 +17,7 @@ import {
   uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
+import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
 
@@ -99,8 +100,7 @@ export function PlaybookEditor() {
   const [data, setData] = useState<PlaybookData | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [focusTopicNameFieldSignal, setFocusTopicNameFieldSignal] =
-    useState(0);
+  const [focusTopicNameFieldSignal, setFocusTopicNameFieldSignal] = useState(0);
   const [expandCheckLabelToken, setExpandCheckLabelToken] = useState(0);
   const [expandCheckLabelTargetId, setExpandCheckLabelTargetId] = useState<
     string | null
@@ -320,10 +320,7 @@ export function PlaybookEditor() {
 
   const exportYaml = useCallback(() => {
     if (!data) return;
-    const out = yaml.dump(data, {
-      lineWidth: -1,
-      noRefs: true,
-    });
+    const out = stringifyPlaybookData(data);
     const blob = new Blob([out], {
       type: "text/yaml;charset=utf-8",
     });
@@ -486,9 +483,7 @@ export function PlaybookEditor() {
           </div>
         </aside>
 
-        <main
-          className="min-h-[calc(100vh-3.5rem)] flex-1 overflow-y-auto p-4 sm:p-6"
-        >
+        <main className="min-h-[calc(100vh-3.5rem)] flex-1 overflow-y-auto p-4 sm:p-6">
           {selectedTopic ? (
             <div className="mx-auto max-w-3xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
