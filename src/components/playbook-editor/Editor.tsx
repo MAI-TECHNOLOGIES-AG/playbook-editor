@@ -18,6 +18,7 @@ import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export"
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
 import yaml from "js-yaml";
+import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -97,7 +98,29 @@ function groupTopicsByDimension(
   return groups;
 }
 
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <title>Log out</title>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
+      />
+    </svg>
+  );
+}
+
 export function PlaybookEditor() {
+  const router = useRouter();
   const [data, setData] = useState<PlaybookData | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -323,6 +346,12 @@ export function PlaybookEditor() {
     setImportError(null);
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/");
+    router.refresh();
+  }, [router]);
+
   if (!data || !dimensionGroups) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center bg-zinc-100 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-400">
@@ -396,6 +425,15 @@ export function PlaybookEditor() {
               onClick={clearPlaybook}
             >
               Clear playbook
+            </button>
+            <button
+              type="button"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
+              onClick={handleLogout}
+              title="Log out"
+              aria-label="Log out"
+            >
+              <LogoutIcon className="size-4" />
             </button>
           </div>
         </div>
