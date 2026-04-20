@@ -11,9 +11,9 @@ import {
   isPlaybookData,
   LOCAL_STORAGE_KEY,
   newCheckId,
-  newTopicId,
   type PlaybookData,
   resolveTopicChecks,
+  uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
@@ -247,18 +247,25 @@ export function PlaybookEditor() {
   );
 
   const addTopicUnderDimension = useCallback((dimension: Dimension) => {
-    const id = newTopicId();
+    let newId: string | null = null;
     setData((d) => {
       if (!d) return d;
+      const defaultName = "New diligence topic";
+      const id = uniqueTopicSlug(defaultName, d.diligence_topics, undefined);
+      newId = id;
       return {
         ...d,
         diligence_topics: [
           ...d.diligence_topics,
-          emptyTopic({ id, dimensions: [dimension] }),
+          emptyTopic({
+            id,
+            name: defaultName,
+            dimensions: [dimension],
+          }),
         ],
       };
     });
-    setSelectedTopicId(id);
+    if (newId) setSelectedTopicId(newId);
   }, []);
 
   const importFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -486,6 +493,7 @@ export function PlaybookEditor() {
               ) : null}
               <TopicPanel
                 topic={selectedTopic}
+                allTopics={data.diligence_topics}
                 resolvedChecks={resolvedChecks}
                 allChecks={data.checks}
                 onTopicChange={handleTopicChange}

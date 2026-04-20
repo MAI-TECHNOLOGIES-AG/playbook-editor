@@ -3,7 +3,10 @@
 import type { ChangeEvent } from "react";
 import { useId } from "react";
 import { CheckEditor } from "@/components/playbook-editor/CheckEditor";
-import { DIMENSIONS } from "@/components/playbook-editor/playbook-data";
+import {
+  DIMENSIONS,
+  uniqueTopicSlug,
+} from "@/components/playbook-editor/playbook-data";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
 
@@ -17,6 +20,8 @@ function labelClass() {
 
 export type TopicPanelProps = {
   topic: RawTopic;
+  /** All topics (for unique slug generation from name). */
+  allTopics: RawTopic[];
   /** Checks in the same order as `topic.checks` */
   resolvedChecks: RawCheck[];
   allChecks: RawCheck[];
@@ -29,6 +34,7 @@ export type TopicPanelProps = {
 
 export function TopicPanel({
   topic,
+  allTopics,
   resolvedChecks,
   allChecks,
   onTopicChange,
@@ -37,6 +43,7 @@ export function TopicPanel({
   onAddNewCheck,
   onLinkExistingCheck,
 }: TopicPanelProps) {
+  const formUid = useId();
   const linkSelectId = useId();
   const topicSet = new Set(topic.checks);
   const linkable = allChecks.filter((c) => !topicSet.has(c.id));
@@ -69,35 +76,42 @@ export function TopicPanel({
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className={labelClass()} htmlFor={`${topic.id}-tid`}>
-              Topic ID
-            </label>
-            <input
-              id={`${topic.id}-tid`}
-              className={fieldClass()}
-              value={topic.id}
-              onChange={(e) => onTopicChange({ ...topic, id: e.target.value })}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass()} htmlFor={`${topic.id}-tname`}>
+            <label className={labelClass()} htmlFor={`${formUid}-tname`}>
               Name
             </label>
             <input
-              id={`${topic.id}-tname`}
+              id={`${formUid}-tname`}
               className={fieldClass()}
               value={topic.name}
-              onChange={(e) =>
-                onTopicChange({ ...topic, name: e.target.value })
-              }
+              onChange={(e) => {
+                const name = e.target.value;
+                const id = uniqueTopicSlug(name, allTopics, topic.id);
+                onTopicChange({ ...topic, name, id });
+              }}
             />
+            <div className="mt-2">
+              <label className={labelClass()} htmlFor={`${formUid}-tid`}>
+                Topic ID
+              </label>
+              <input
+                id={`${formUid}-tid`}
+                readOnly
+                tabIndex={-1}
+                className={`${fieldClass()} cursor-default bg-zinc-50 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300`}
+                value={topic.id}
+              />
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                Generated from the name. Adjust the name if you need a different
+                id.
+              </p>
+            </div>
           </div>
           <div className="sm:col-span-2">
-            <label className={labelClass()} htmlFor={`${topic.id}-tdesc`}>
+            <label className={labelClass()} htmlFor={`${formUid}-tdesc`}>
               Description
             </label>
             <textarea
-              id={`${topic.id}-tdesc`}
+              id={`${formUid}-tdesc`}
               className={`${fieldClass()} min-h-[100px]`}
               value={topic.description}
               onChange={(e) =>

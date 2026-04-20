@@ -92,8 +92,36 @@ export function newCheckId(): string {
   return `check-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-export function newTopicId(): string {
-  return `topic-${crypto.randomUUID().slice(0, 8)}`;
+/** Kebab-case id segment suitable for YAML `id` (topic slug). */
+export function slugifyTopicName(name: string): string {
+  const s = name
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/gu, "");
+  return s || "topic";
+}
+
+/**
+ * Unique topic id from display name. Reserves `currentTopicId` when resolving
+ * collisions so renaming keeps a stable slot until the new slug is taken.
+ */
+export function uniqueTopicSlug(
+  name: string,
+  allTopics: RawTopic[],
+  currentTopicId: string | undefined,
+): string {
+  const otherIds = new Set(
+    allTopics.filter((t) => t.id !== currentTopicId).map((t) => t.id),
+  );
+  let base = slugifyTopicName(name);
+  if (!base) base = "topic";
+  if (!otherIds.has(base)) return base;
+  let n = 2;
+  while (otherIds.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
 }
 
 export function resolveTopicChecks(
