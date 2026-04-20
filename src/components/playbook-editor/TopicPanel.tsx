@@ -23,7 +23,6 @@ export type TopicPanelProps = {
   onTopicChange: (next: RawTopic) => void;
   onCheckChange: (checkId: string, next: RawCheck) => void;
   onRemoveCheckFromTopic: (checkId: string) => void;
-  onDeleteCheckFromPlaybook: (checkId: string) => void;
   onAddNewCheck: () => void;
   onLinkExistingCheck: (checkId: string) => void;
 };
@@ -35,7 +34,6 @@ export function TopicPanel({
   onTopicChange,
   onCheckChange,
   onRemoveCheckFromTopic,
-  onDeleteCheckFromPlaybook,
   onAddNewCheck,
   onLinkExistingCheck,
 }: TopicPanelProps) {
@@ -163,6 +161,10 @@ export function TopicPanel({
             ) : null}
           </div>
         </div>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          Removing a check drops it from this topic. If no other topic uses that
+          check, it is deleted from the playbook entirely.
+        </p>
         <div className="mt-4 space-y-3">
           {resolvedChecks.length === 0 ? (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900/40">
@@ -175,8 +177,7 @@ export function TopicPanel({
                 key={check.id}
                 check={check}
                 onChange={(next) => onCheckChange(check.id, next)}
-                onRemoveFromTopic={() => onRemoveCheckFromTopic(check.id)}
-                onDeleteFromPlaybook={() => onDeleteCheckFromPlaybook(check.id)}
+                onRemoveCheck={() => onRemoveCheckFromTopic(check.id)}
                 allCheckIds={allCheckIds}
               />
             ))

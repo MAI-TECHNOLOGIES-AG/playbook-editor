@@ -23,6 +23,14 @@ export const DIMENSIONS: Dimension[] = [
 
 export type PlaybookData = RawPlaybook;
 
+/** Blank playbook — no bundled content; user imports YAML or builds from scratch. */
+export function emptyPlaybook(): PlaybookData {
+  return {
+    diligence_topics: [],
+    checks: [],
+  };
+}
+
 export function isPlaybookData(value: unknown): value is PlaybookData {
   if (!value || typeof value !== "object") return false;
   const v = value as PlaybookData;

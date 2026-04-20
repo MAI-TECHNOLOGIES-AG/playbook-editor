@@ -4,9 +4,9 @@ import yaml from "js-yaml";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  clonePlaybook,
   DIMENSIONS,
   emptyCheck,
+  emptyPlaybook,
   emptyTopic,
   isPlaybookData,
   LOCAL_STORAGE_KEY,
@@ -17,12 +17,7 @@ import {
 } from "@/components/playbook-editor/playbook-data";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
-import defaultPlaybookJson from "@/playbook/playbook.generated.json";
 import type { Dimension } from "@/playbook/types";
-
-const defaultPlaybook = clonePlaybook(
-  defaultPlaybookJson as unknown as PlaybookData,
-);
 
 function applyCheckUpdate(
   data: PlaybookData,
@@ -67,6 +62,22 @@ function deleteCheckEverywhere(
   };
 }
 
+/** Drop check definitions that no topic references (e.g. after deleting a topic). */
+function pruneUnreferencedChecks(data: PlaybookData): PlaybookData {
+  const referenced = new Set<string>();
+  for (const t of data.diligence_topics) {
+    for (const id of t.checks) referenced.add(id);
+  }
+  const danglingIds = data.checks
+    .filter((c) => !referenced.has(c.id))
+    .map((c) => c.id);
+  let next = data;
+  for (const id of danglingIds) {
+    next = deleteCheckEverywhere(next, id);
+  }
+  return next;
+}
+
 function groupTopicsByDimension(
   topics: RawTopic[],
 ): Record<Dimension, RawTopic[]> {
@@ -91,7 +102,7 @@ export function PlaybookEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let initial = clonePlaybook(defaultPlaybook);
+    let initial: PlaybookData = emptyPlaybook();
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) {
@@ -99,7 +110,7 @@ export function PlaybookEditor() {
         if (isPlaybookData(parsed)) initial = parsed;
       }
     } catch {
-      /* keep default */
+      /* keep empty */
     }
     setData(initial);
     setSelectedTopicId(initial.diligence_topics[0]?.id ?? null);
@@ -175,22 +186,23 @@ export function PlaybookEditor() {
       if (!sid) return;
       setData((d) => {
         if (!d) return d;
-        return {
-          ...d,
-          diligence_topics: d.diligence_topics.map((t) =>
-            t.id === sid
-              ? { ...t, checks: t.checks.filter((id) => id !== checkId) }
-              : t,
-          ),
-        };
+        const diligence_topics = d.diligence_topics.map((t) =>
+          t.id === sid
+            ? { ...t, checks: t.checks.filter((id) => id !== checkId) }
+            : t,
+        );
+        const stillReferenced = diligence_topics.some((t) =>
+          t.checks.includes(checkId),
+        );
+        let next: PlaybookData = { ...d, diligence_topics };
+        if (!stillReferenced) {
+          next = deleteCheckEverywhere(next, checkId);
+        }
+        return next;
       });
     },
     [selectedTopicId],
   );
-
-  const handleDeleteCheckFromPlaybook = useCallback((checkId: string) => {
-    setData((d) => (d ? deleteCheckEverywhere(d, checkId) : d));
-  }, []);
 
   const handleAddNewCheck = useCallback(() => {
     const sid = selectedTopicId;
@@ -293,10 +305,10 @@ export function PlaybookEditor() {
     URL.revokeObjectURL(url);
   }, [data]);
 
-  const resetToBundled = useCallback(() => {
-    const fresh = clonePlaybook(defaultPlaybook);
+  const clearPlaybook = useCallback(() => {
+    const fresh = emptyPlaybook();
     setData(fresh);
-    setSelectedTopicId(fresh.diligence_topics[0]?.id ?? null);
+    setSelectedTopicId(null);
     setImportError(null);
   }, []);
 
@@ -361,9 +373,9 @@ export function PlaybookEditor() {
             <button
               type="button"
               className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              onClick={resetToBundled}
+              onClick={clearPlaybook}
             >
-              Reset to default
+              Clear playbook
             </button>
           </div>
         </div>
@@ -454,7 +466,10 @@ export function PlaybookEditor() {
                         (t) => t.id !== sid,
                       );
                       setSelectedTopicId(nextTopics[0]?.id ?? null);
-                      return { ...d, diligence_topics: nextTopics };
+                      return pruneUnreferencedChecks({
+                        ...d,
+                        diligence_topics: nextTopics,
+                      });
                     });
                   }}
                 >
@@ -476,16 +491,15 @@ export function PlaybookEditor() {
                 onTopicChange={handleTopicChange}
                 onCheckChange={handleCheckChange}
                 onRemoveCheckFromTopic={handleRemoveCheckFromTopic}
-                onDeleteCheckFromPlaybook={handleDeleteCheckFromPlaybook}
                 onAddNewCheck={handleAddNewCheck}
                 onLinkExistingCheck={handleLinkExistingCheck}
               />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/50 px-8 py-24 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Select a diligence topic from the left, or add one under a
-                dimension.
+              <p className="max-w-md text-zinc-600 dark:text-zinc-400">
+                Import a YAML playbook, or add a topic under a dimension in the
+                sidebar. There is no built-in default catalog.
               </p>
             </div>
           )}

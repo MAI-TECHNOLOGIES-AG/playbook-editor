@@ -58,7 +58,7 @@ diligence_topics:
 # ----------------------------------------------------------------------------
 
 checks:
-  - id: cnch-annual-meeting-existee
+  - id: ch-annual-meeting-existence
     label: Annual Meeting Existence (4-Years)
     description: |
       Verifies there is evidence of at least one ordinary shareholders meeting

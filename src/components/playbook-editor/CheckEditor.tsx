@@ -16,8 +16,8 @@ const BASES: CheckBasis[] = ["statutory", "commercial"];
 type CheckEditorProps = {
   check: RawCheck;
   onChange: (next: RawCheck) => void;
-  onRemoveFromTopic: () => void;
-  onDeleteFromPlaybook: () => void;
+  /** Unlink from this topic; deletes the check from the catalog if no topic still references it. */
+  onRemoveCheck: () => void;
   allCheckIds: string[];
 };
 
@@ -32,8 +32,7 @@ function labelClass() {
 export function CheckEditor({
   check,
   onChange,
-  onRemoveFromTopic,
-  onDeleteFromPlaybook,
+  onRemoveCheck,
   allCheckIds,
 }: CheckEditorProps) {
   const panelId = useId();
@@ -140,9 +139,9 @@ export function CheckEditor({
         <button
           type="button"
           className="shrink-0 rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          onClick={onRemoveFromTopic}
+          onClick={onRemoveCheck}
         >
-          Remove from topic
+          Remove check
         </button>
       </div>
       {open ? (
@@ -500,16 +499,6 @@ export function CheckEditor({
             ) : (
               <p className="mt-2 text-sm text-zinc-500">No execution block.</p>
             )}
-          </div>
-
-          <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-            <button
-              type="button"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-800 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70"
-              onClick={onDeleteFromPlaybook}
-            >
-              Delete check from playbook
-            </button>
           </div>
         </div>
       ) : null}
