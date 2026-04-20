@@ -486,101 +486,111 @@ export function CheckEditor({
             </button>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Execution
-              </h4>
-              <button
-                type="button"
-                className="rounded-md bg-zinc-200 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
-                onClick={ensureExecution}
-              >
-                {check.execution ? "Edit execution" : "Add execution"}
-              </button>
-            </div>
-            {check.execution ? (
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass()} htmlFor={`${formUid}-scope`}>
-                    Scope
-                  </label>
-                  <select
-                    id={`${formUid}-scope`}
-                    className={fieldClass()}
-                    value={check.execution.scope}
-                    onChange={(e) => {
-                      const ex = check.execution;
-                      if (!ex) return;
-                      set({
-                        execution: {
-                          ...ex,
-                          scope: e.target.value as "global" | "per_item",
-                        },
-                      });
-                    }}
-                  >
-                    <option value="global">global</option>
-                    <option value="per_item">per_item</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass()} htmlFor={`${formUid}-target`}>
-                    Target list (per_item)
-                  </label>
-                  <input
-                    id={`${formUid}-target`}
-                    className={fieldClass()}
-                    value={check.execution.target_list ?? ""}
-                    onChange={(e) => {
-                      const ex = check.execution;
-                      if (!ex) return;
-                      set({
-                        execution: {
-                          ...ex,
-                          target_list: e.target.value.trim() || undefined,
-                        },
-                      });
-                    }}
-                    placeholder="e.g. agm_document_ids"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass()} htmlFor={`${formUid}-ctx`}>
-                    Context exports (comma or newline)
-                  </label>
-                  <textarea
-                    id={`${formUid}-ctx`}
-                    className={`${fieldClass()} min-h-[56px]`}
-                    value={contextExportsText}
-                    onChange={updateContextExports}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className={labelClass()} htmlFor={`${formUid}-steps`}>
-                    Steps (one per line → YAML step_1, step_2, …)
-                  </label>
-                  <textarea
-                    id={`${formUid}-steps`}
-                    className={`${fieldClass()} min-h-[120px] font-mono text-xs`}
-                    value={stepLines}
-                    onChange={updateSteps}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <button
-                    type="button"
-                    className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
-                    onClick={() => set({ execution: undefined })}
-                  >
-                    Remove execution block
-                  </button>
-                </div>
+          {displayTechFields ? (
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                  Execution
+                </h4>
+                <button
+                  type="button"
+                  className="rounded-md bg-zinc-200 px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
+                  onClick={ensureExecution}
+                >
+                  {check.execution ? "Edit execution" : "Add execution"}
+                </button>
               </div>
-            ) : (
-              <p className="mt-2 text-sm text-zinc-500">No execution block.</p>
-            )}
-          </div>
+              {check.execution ? (
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      className={labelClass()}
+                      htmlFor={`${formUid}-scope`}
+                    >
+                      Scope
+                    </label>
+                    <select
+                      id={`${formUid}-scope`}
+                      className={fieldClass()}
+                      value={check.execution.scope}
+                      onChange={(e) => {
+                        const ex = check.execution;
+                        if (!ex) return;
+                        set({
+                          execution: {
+                            ...ex,
+                            scope: e.target.value as "global" | "per_item",
+                          },
+                        });
+                      }}
+                    >
+                      <option value="global">global</option>
+                      <option value="per_item">per_item</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      className={labelClass()}
+                      htmlFor={`${formUid}-target`}
+                    >
+                      Target list (per_item)
+                    </label>
+                    <input
+                      id={`${formUid}-target`}
+                      className={fieldClass()}
+                      value={check.execution.target_list ?? ""}
+                      onChange={(e) => {
+                        const ex = check.execution;
+                        if (!ex) return;
+                        set({
+                          execution: {
+                            ...ex,
+                            target_list: e.target.value.trim() || undefined,
+                          },
+                        });
+                      }}
+                      placeholder="e.g. agm_document_ids"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass()} htmlFor={`${formUid}-ctx`}>
+                      Context exports (comma or newline)
+                    </label>
+                    <textarea
+                      id={`${formUid}-ctx`}
+                      className={`${fieldClass()} min-h-[56px]`}
+                      value={contextExportsText}
+                      onChange={updateContextExports}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelClass()} htmlFor={`${formUid}-steps`}>
+                      Steps (one per line → YAML step_1, step_2, …)
+                    </label>
+                    <textarea
+                      id={`${formUid}-steps`}
+                      className={`${fieldClass()} min-h-[120px] font-mono text-xs`}
+                      value={stepLines}
+                      onChange={updateSteps}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
+                      onClick={() => set({ execution: undefined })}
+                    >
+                      Remove execution block
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-zinc-500">
+                  No execution block.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
       </div>
