@@ -22,39 +22,39 @@
 
 import playbook from './playbook.generated.json';
 import type {
-  Check,
-  CheckBasis,
-  CheckExecution,
-  CheckPrerequisite,
-  DiligenceTopic,
-  EvaluationRule,
-  FindingSeverity,
+    Check,
+    CheckBasis,
+    CheckExecution,
+    CheckPrerequisite,
+    DiligenceTopic,
+    EvaluationRule,
+    FindingSeverity,
 } from './types';
 
 // ============================================================================
 // Raw shape (snake_case, mirrors the yaml authoring conventions)
 // ============================================================================
 
-type RawCheckPrerequisite = {
+export type RawCheckPrerequisite = {
   check_id: string;
   required_state: 'finding' | 'cleared';
 };
 
-type RawEvaluationRule = {
+export type RawEvaluationRule = {
   clear_condition: string;
   finding_condition: string;
 };
 
-type RawExecutionStep = Record<string, string>; // { step_1: "..." }
+export type RawExecutionStep = Record<string, string>; // { step_1: "..." }
 
-type RawExecution = {
+export type RawExecution = {
   scope: 'global' | 'per_item';
   target_list?: string;
   context_exports?: string[];
   steps: RawExecutionStep[];
 };
 
-type RawCheck = {
+export type RawCheck = {
   id: string;
   label: string;
   description: string;
@@ -68,7 +68,7 @@ type RawCheck = {
   execution?: RawExecution;
 };
 
-type RawTopic = {
+export type RawTopic = {
   id: string;
   name: string;
   description: string;
@@ -76,7 +76,7 @@ type RawTopic = {
   checks: string[];
 };
 
-type RawPlaybook = {
+export type RawPlaybook = {
   version?: string;
   diligence_topics: RawTopic[];
   checks: RawCheck[];
