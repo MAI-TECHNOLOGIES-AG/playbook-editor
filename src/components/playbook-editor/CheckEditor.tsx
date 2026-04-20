@@ -318,23 +318,6 @@ export function CheckEditor({
                 autoComplete="off"
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass()} htmlFor={`${formUid}-rec`}>
-                Recommendation
-              </label>
-              <textarea
-                id={`${formUid}-rec`}
-                className={`${fieldClass()} min-h-[72px]`}
-                value={check.recommendation ?? ""}
-                onChange={(e) =>
-                  set({
-                    recommendation: e.target.value.trim()
-                      ? e.target.value
-                      : undefined,
-                  })
-                }
-              />
-            </div>
           </div>
 
           <div>
@@ -422,44 +405,77 @@ export function CheckEditor({
               Evaluation rule
             </h4>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className={labelClass()} htmlFor={`${formUid}-clear`}>
-                  Clear condition
-                </label>
-                <textarea
-                  id={`${formUid}-clear`}
-                  className={`${fieldClass()} min-h-[72px]`}
-                  value={check.evaluation_rule?.clear_condition ?? ""}
-                  onChange={(e) =>
-                    set({
-                      evaluation_rule: {
-                        clear_condition: e.target.value,
-                        finding_condition:
-                          check.evaluation_rule?.finding_condition ?? "",
-                      },
-                    })
-                  }
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={labelClass()} htmlFor={`${formUid}-finding`}>
-                  Finding condition
-                </label>
-                <textarea
-                  id={`${formUid}-finding`}
-                  className={`${fieldClass()} min-h-[72px]`}
-                  value={check.evaluation_rule?.finding_condition ?? ""}
-                  onChange={(e) =>
-                    set({
-                      evaluation_rule: {
-                        clear_condition:
-                          check.evaluation_rule?.clear_condition ?? "",
-                        finding_condition: e.target.value,
-                      },
-                    })
-                  }
-                />
-              </div>
+              <fieldset className="sm:col-span-2 rounded-md border border-zinc-200 p-3 transition-colors focus-within:border-zinc-500 dark:border-zinc-600 dark:focus-within:border-zinc-400">
+                <legend className="px-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Clear outcome
+                </legend>
+                <div>
+                  <label className={labelClass()} htmlFor={`${formUid}-clear`}>
+                    Clear condition
+                  </label>
+                  <textarea
+                    id={`${formUid}-clear`}
+                    className={`${fieldClass()} min-h-[72px]`}
+                    value={check.evaluation_rule?.clear_condition ?? ""}
+                    onChange={(e) =>
+                      set({
+                        evaluation_rule: {
+                          clear_condition: e.target.value,
+                          finding_condition:
+                            check.evaluation_rule?.finding_condition ?? "",
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </fieldset>
+              <fieldset className="sm:col-span-2 rounded-md border border-zinc-200 p-3 transition-colors focus-within:border-zinc-500 dark:border-zinc-600 dark:focus-within:border-zinc-400">
+                <legend className="px-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Finding outcome
+                </legend>
+                <div>
+                  <label
+                    className={labelClass()}
+                    htmlFor={`${formUid}-finding`}
+                  >
+                    Finding condition
+                  </label>
+                  <textarea
+                    id={`${formUid}-finding`}
+                    className={`${fieldClass()} min-h-[72px]`}
+                    value={check.evaluation_rule?.finding_condition ?? ""}
+                    onChange={(e) =>
+                      set({
+                        evaluation_rule: {
+                          clear_condition:
+                            check.evaluation_rule?.clear_condition ?? "",
+                          finding_condition: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-600">
+                  <label className={labelClass()} htmlFor={`${formUid}-rec`}>
+                    Recommendation
+                  </label>
+                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    Used when the finding condition is met.
+                  </p>
+                  <textarea
+                    id={`${formUid}-rec`}
+                    className={`${fieldClass()} mt-1 min-h-[72px]`}
+                    value={check.recommendation ?? ""}
+                    onChange={(e) =>
+                      set({
+                        recommendation: e.target.value.trim()
+                          ? e.target.value
+                          : undefined,
+                      })
+                    }
+                  />
+                </div>
+              </fieldset>
             </div>
             <button
               type="button"

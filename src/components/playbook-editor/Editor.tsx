@@ -505,9 +505,9 @@ export function PlaybookEditor() {
           </div>
         </aside>
 
-        <main className="min-h-[calc(100vh-3.5rem)] mt-15 flex-1 overflow-y-auto p-4 sm:p-6 ml-72">
+        <main className="min-h-[calc(100vh-3.5rem)] mt-15 flex-1 overflow-y-auto py-10 px-12 ml-72">
           {selectedTopic ? (
-            <div className="mx-auto max-w-3xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mx-auto w-full max-w-7xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-zinc-500">
                   Edit fields below. Changes save automatically in this browser.
