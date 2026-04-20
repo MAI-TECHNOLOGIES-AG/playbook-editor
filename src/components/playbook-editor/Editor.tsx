@@ -1,27 +1,37 @@
 "use client";
 
-import {
-    DIMENSIONS,
-    emptyCheck,
-    emptyPlaybook,
-    emptyTopic,
-    ensureUniqueCheckOwnership,
-    isPlaybookData,
-    LOCAL_STORAGE_KEY,
-    type PlaybookData,
-    resolveTopicChecks,
-    uniqueCheckSlug,
-    uniqueTopicSlug,
-} from "@/components/playbook-editor/playbook-data";
-import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
-import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
-import type { RawCheck, RawTopic } from "@/playbook/playbook";
-import type { Dimension } from "@/playbook/types";
 import yaml from "js-yaml";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import {
+  DIMENSIONS,
+  emptyCheck,
+  emptyPlaybook,
+  emptyTopic,
+  ensureUniqueCheckOwnership,
+  isPlaybookData,
+  LOCAL_STORAGE_KEY,
+  type PlaybookData,
+  resolveTopicChecks,
+  uniqueCheckSlug,
+  uniqueTopicSlug,
+} from "@/components/playbook-editor/playbook-data";
+import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
+import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "@/lib/local-storage";
+import type { RawCheck, RawTopic } from "@/playbook/playbook";
+import type { Dimension } from "@/playbook/types";
+
+const DISPLAY_TECH_FIELDS_STORAGE_KEY = "playbook-editor-display-tech-fields";
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
 
 function applyCheckUpdate(
   data: PlaybookData,
@@ -130,7 +140,9 @@ export function PlaybookEditor() {
     string | null
   >(null);
   const [importError, setImportError] = useState<string | null>(null);
-  const [displayTechFields, setDisplayTechFields] = useState(true);
+  const [displayTechFields, setDisplayTechFields] = useState(() =>
+    readLocalStorageJson(DISPLAY_TECH_FIELDS_STORAGE_KEY, isBoolean, false),
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -389,7 +401,14 @@ export function PlaybookEditor() {
                 type="checkbox"
                 className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400 dark:border-zinc-600"
                 checked={displayTechFields}
-                onChange={(e) => setDisplayTechFields(e.target.checked)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setDisplayTechFields(checked);
+                  writeLocalStorageJson(
+                    DISPLAY_TECH_FIELDS_STORAGE_KEY,
+                    checked,
+                  );
+                }}
               />
               Display tech fields
             </label>
