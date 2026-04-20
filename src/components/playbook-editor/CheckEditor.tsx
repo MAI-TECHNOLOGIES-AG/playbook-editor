@@ -157,10 +157,11 @@ export function CheckEditor({
   }, [expandAndFocusLabelToken, open]);
 
   return (
-    <div
-      ref={rootRef}
-      className="rounded-lg border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
-    >
+    <div className="group">
+      <div
+        ref={rootRef}
+        className="rounded-lg border border-zinc-200 bg-zinc-50/80 transition-[border-color] duration-150 ease-out group-focus-within:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/40 dark:group-focus-within:border-zinc-500"
+      >
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -566,6 +567,7 @@ export function CheckEditor({
           </div>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }
