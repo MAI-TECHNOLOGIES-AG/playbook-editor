@@ -9,10 +9,13 @@ import {
 import type { RawCheck } from "@/playbook/playbook";
 import type { CheckBasis, Dimension, FindingSeverity } from "@/playbook/types";
 import type { ChangeEvent } from "react";
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 
 const SEVERITIES: FindingSeverity[] = ["low", "medium", "high", "critical"];
 const BASES: CheckBasis[] = ["statutory", "commercial"];
+
+/** Place the top of the new check near this fraction of the visible viewport height. */
+const NEW_CHECK_SCROLL_ALIGN = 0.5;
 
 type CheckEditorProps = {
   check: RawCheck;
@@ -22,6 +25,8 @@ type CheckEditorProps = {
   allChecks: RawCheck[];
   /** When true, show internal fields (check id, etc.). */
   displayTechFields: boolean;
+  /** When incremented for this check (via parent), expand the panel and focus the label field. */
+  expandAndFocusLabelToken?: number;
 };
 
 function fieldClass() {
@@ -38,9 +43,12 @@ export function CheckEditor({
   onRemoveCheck,
   allChecks,
   displayTechFields,
+  expandAndFocusLabelToken = 0,
 }: CheckEditorProps) {
   const formUid = useId();
   const panelId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const labelInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const allCheckIds = allChecks.map((c) => c.id);
 
@@ -124,8 +132,35 @@ export function CheckEditor({
     set({ prerequisites: list.length ? list : undefined });
   };
 
+  useLayoutEffect(() => {
+    if (!expandAndFocusLabelToken) return;
+    setOpen(true);
+  }, [expandAndFocusLabelToken]);
+
+  useLayoutEffect(() => {
+    if (!expandAndFocusLabelToken || !open) return;
+    const inputEl = labelInputRef.current;
+    if (inputEl) {
+      inputEl.focus({ preventScroll: true });
+      inputEl.select();
+    }
+    const raf = requestAnimationFrame(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      const checkRect = root.getBoundingClientRect();
+      const targetTop = NEW_CHECK_SCROLL_ALIGN * window.innerHeight;
+      const delta = checkRect.top - targetTop;
+      if (Math.abs(delta) < 2) return;
+      window.scrollBy({ top: delta, behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [expandAndFocusLabelToken, open]);
+
   return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40">
+    <div
+      ref={rootRef}
+      className="rounded-lg border border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
+    >
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -171,6 +206,7 @@ export function CheckEditor({
                 </span>
               </div>
               <input
+                ref={labelInputRef}
                 id={`${formUid}-label`}
                 className={fieldClass()}
                 value={check.label}

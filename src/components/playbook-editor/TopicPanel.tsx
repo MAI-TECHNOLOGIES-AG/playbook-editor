@@ -8,7 +8,7 @@ import {
 import type { RawCheck, RawTopic } from "@/playbook/playbook";
 import type { Dimension } from "@/playbook/types";
 import type { ChangeEvent } from "react";
-import { useId } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 
 function fieldClass() {
   return "mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400";
@@ -32,6 +32,11 @@ export type TopicPanelProps = {
   onRemoveCheckFromTopic: (checkId: string) => void;
   onAddNewCheck: () => void;
   onLinkExistingCheck: (checkId: string) => void;
+  /** Increment when the parent adds a topic so the name field can be focused. */
+  focusTopicNameFieldSignal?: number;
+  /** Bumps with `expandCheckLabelTargetId` so that check expands and focuses its label. */
+  expandCheckLabelToken?: number;
+  expandCheckLabelTargetId?: string | null;
 };
 
 export function TopicPanel({
@@ -45,9 +50,13 @@ export function TopicPanel({
   onRemoveCheckFromTopic,
   onAddNewCheck,
   onLinkExistingCheck,
+  focusTopicNameFieldSignal = 0,
+  expandCheckLabelToken = 0,
+  expandCheckLabelTargetId = null,
 }: TopicPanelProps) {
   const formUid = useId();
   const linkSelectId = useId();
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const topicSet = new Set(topic.checks);
   const linkable = allChecks.filter((c) => !topicSet.has(c.id));
 
@@ -66,6 +75,14 @@ export function TopicPanel({
     if (id) onLinkExistingCheck(id);
     e.target.selectedIndex = 0;
   };
+
+  useLayoutEffect(() => {
+    if (!focusTopicNameFieldSignal) return;
+    const el = nameInputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, [focusTopicNameFieldSignal]);
 
   return (
     <div className="space-y-8">
@@ -90,6 +107,7 @@ export function TopicPanel({
               </span>
             </div>
             <input
+              ref={nameInputRef}
               id={`${formUid}-tname`}
               className={fieldClass()}
               value={topic.name}
@@ -206,6 +224,11 @@ export function TopicPanel({
                 onRemoveCheck={() => onRemoveCheckFromTopic(check.id)}
                 allChecks={allChecks}
                 displayTechFields={displayTechFields}
+                expandAndFocusLabelToken={
+                  expandCheckLabelTargetId === check.id
+                    ? expandCheckLabelToken
+                    : 0
+                }
               />
             ))
           )}
