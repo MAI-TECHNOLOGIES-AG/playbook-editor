@@ -594,13 +594,20 @@ export function PlaybookEditor() {
             >
               Export YAML
             </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              onClick={clearPlaybook}
+            <ConfirmPopover
+              title="Clear playbook?"
+              description="Replaces the current playbook with a blank one. Undo history for the cleared content will be lost."
+              confirmText="Clear"
+              cancelText="Cancel"
+              onConfirm={clearPlaybook}
             >
-              Clear playbook
-            </button>
+              <button
+                type="button"
+                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              >
+                Clear playbook
+              </button>
+            </ConfirmPopover>
             <button
               type="button"
               className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
