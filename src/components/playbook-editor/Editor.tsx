@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { ConfirmPopover } from "@/components/ConfirmPopover";
 import {
   ConfirmDialog,
   type ConfirmDialogHandle,
@@ -48,6 +47,9 @@ import type { Dimension } from "@/playbook/types";
 const DISPLAY_TECH_FIELDS_STORAGE_KEY = "playbook-editor-display-tech-fields";
 
 const PLAYBOOK_UNDO_STEPS = 50;
+
+/** Fixed header height; keep sidebar offset, main margin, and min-heights in sync. */
+const PLAYBOOK_TOPBAR_HEIGHT_PX = 63;
 
 function parseStoredHistory(raw: string): UndoHistory<PlaybookData> | null {
   try {
@@ -652,7 +654,10 @@ export function PlaybookEditor() {
       </header>
 
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 gap-0">
-        <aside className="flex fixed left-0 top-15 bottom-0 w-full shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:w-72">
+        <aside
+          className="flex fixed bottom-0 left-0 w-full shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 sm:w-72"
+          style={{ top: PLAYBOOK_TOPBAR_HEIGHT_PX }}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {DIMENSIONS.map((dim) => (
               <div key={dim} className="mb-4">
@@ -717,19 +722,41 @@ export function PlaybookEditor() {
           </div>
         </aside>
 
-        <main className="min-h-[calc(100vh-3.5rem)] mt-15 flex-1 overflow-y-auto py-10 px-12 ml-72">
-          {selectedTopic ? (
-            <div className="mx-auto w-full max-w-7xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-zinc-500">
-                  Edit fields below. Changes save automatically in this browser.
-                </p>
-                <ConfirmPopover
-                  title="Delete topic?"
-                  description="Removes topic-only checks; checks used elsewhere stay."
-                  confirmText="Delete"
-                  cancelText="Cancel"
-                  onConfirm={() => {
+        <main
+          className="overflow-y-auto"
+          style={{
+            position: "fixed",
+            top: PLAYBOOK_TOPBAR_HEIGHT_PX,
+            left: "18rem",
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <div className="px-12 py-10">
+            {selectedTopic ? (
+              <div className="mx-auto w-full max-w-7xl rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                {orphanedCheckIds.length > 0 ? (
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    Unknown check IDs on this topic (not in playbook checks):{" "}
+                    <span className="font-mono">
+                      {orphanedCheckIds.join(", ")}
+                    </span>
+                  </div>
+                ) : null}
+                <TopicPanel
+                  topic={selectedTopic}
+                  allTopics={data.diligence_topics}
+                  displayTechFields={displayTechFields}
+                  resolvedChecks={resolvedChecks}
+                  allChecks={data.checks}
+                  onTopicChange={handleTopicChange}
+                  onCheckChange={handleCheckChange}
+                  onRemoveCheckFromTopic={handleRemoveCheckFromTopic}
+                  onAddNewCheck={handleAddNewCheck}
+                  focusTopicNameFieldSignal={focusTopicNameFieldSignal}
+                  expandCheckLabelToken={expandCheckLabelToken}
+                  expandCheckLabelTargetId={expandCheckLabelTargetId}
+                  onDeleteTopic={() => {
                     const sid = selectedTopicId;
                     if (!sid) return;
                     setData((d) => {
@@ -744,46 +771,17 @@ export function PlaybookEditor() {
                       });
                     });
                   }}
-                >
-                  <button
-                    type="button"
-                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                  >
-                    Delete topic
-                  </button>
-                </ConfirmPopover>
+                />
               </div>
-              {orphanedCheckIds.length > 0 ? (
-                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                  Unknown check IDs on this topic (not in playbook checks):{" "}
-                  <span className="font-mono">
-                    {orphanedCheckIds.join(", ")}
-                  </span>
-                </div>
-              ) : null}
-              <TopicPanel
-                topic={selectedTopic}
-                allTopics={data.diligence_topics}
-                displayTechFields={displayTechFields}
-                resolvedChecks={resolvedChecks}
-                allChecks={data.checks}
-                onTopicChange={handleTopicChange}
-                onCheckChange={handleCheckChange}
-                onRemoveCheckFromTopic={handleRemoveCheckFromTopic}
-                onAddNewCheck={handleAddNewCheck}
-                focusTopicNameFieldSignal={focusTopicNameFieldSignal}
-                expandCheckLabelToken={expandCheckLabelToken}
-                expandCheckLabelTargetId={expandCheckLabelTargetId}
-              />
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/50 px-8 py-24 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-              <p className="max-w-md text-zinc-600 dark:text-zinc-400">
-                Import a YAML playbook, or add a topic under a dimension in the
-                sidebar. There is no built-in default catalog.
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/50 px-8 py-24 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+                <p className="max-w-md text-zinc-600 dark:text-zinc-400">
+                  Import a YAML playbook, or add a topic under a dimension in the
+                  sidebar. There is no built-in default catalog.
+                </p>
+              </div>
+            )}
+          </div>
         </main>
       </div>
       <PlaybookImportIssuesDialog

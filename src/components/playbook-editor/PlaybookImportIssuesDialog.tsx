@@ -1,22 +1,22 @@
 "use client";
 
-import { CheckIcon, CopyIcon } from "lucide-react";
-import { useState } from "react";
 import {
-  formatUnknownCheckContextForClipboard,
-  getUnknownCheckReferenceContext,
-  type UnknownCheckRefContext,
+    formatUnknownCheckContextForClipboard,
+    getUnknownCheckReferenceContext,
+    type UnknownCheckRefContext,
 } from "@/components/playbook-editor/playbook-import-issue-context";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { useState } from "react";
 
 type PlaybookImportIssuesDialogProps = {
   open: boolean;
@@ -43,8 +43,7 @@ function formatIssueForClipboard(
   document: unknown | undefined,
 ): string {
   const lines = [
-    `Issue ${index + 1} of ${total} — playbook YAML import validation`,
-    "",
+    `Issue ${index + 1} of ${total} — playbook YAML import validation:`,
     issue,
   ];
   const ctx = document

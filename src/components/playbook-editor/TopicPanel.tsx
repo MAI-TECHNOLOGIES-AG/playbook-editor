@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmPopover } from "@/components/ConfirmPopover";
 import { CheckEditor } from "@/components/playbook-editor/CheckEditor";
 import {
     DIMENSIONS,
@@ -36,6 +37,8 @@ export type TopicPanelProps = {
   /** Bumps with `expandCheckLabelTargetId` so that check expands and focuses its label. */
   expandCheckLabelToken?: number;
   expandCheckLabelTargetId?: string | null;
+  /** When set, shows “Delete topic” in the sticky header (confirmed via popover). */
+  onDeleteTopic?: () => void;
 };
 
 export function TopicPanel({
@@ -51,6 +54,7 @@ export function TopicPanel({
   focusTopicNameFieldSignal = 0,
   expandCheckLabelToken = 0,
   expandCheckLabelTargetId = null,
+  onDeleteTopic,
 }: TopicPanelProps) {
   const formUid = useId();
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -76,13 +80,37 @@ export function TopicPanel({
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          {topic.name || "Untitled topic"}
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Basic info and dimensions for this diligence topic.
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="sticky top-0 z-10 -mx-6 mb-4 border-b border-zinc-100 bg-white/95 px-6 py-2 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                {topic.name || "Untitled topic"}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Basic info and dimensions for this diligence topic.
+              </p>
+            </div>
+            {onDeleteTopic ? (
+              <div className="shrink-0 pt-0.5">
+                <ConfirmPopover
+                  title="Delete topic?"
+                  description="Removes topic-only checks; checks used elsewhere stay."
+                  confirmText="Delete"
+                  cancelText="Cancel"
+                  onConfirm={onDeleteTopic}
+                >
+                  <button
+                    type="button"
+                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
+                  >
+                    Delete topic
+                  </button>
+                </ConfirmPopover>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <label className={labelClass()} htmlFor={`${formUid}-tname`}>

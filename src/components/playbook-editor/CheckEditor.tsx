@@ -19,6 +19,24 @@ const BASES: CheckBasis[] = ["statutory", "commercial"];
 /** Place the top of the new check near this fraction of the visible viewport height. */
 const NEW_CHECK_SCROLL_ALIGN = 0.5;
 
+function overflowNearestScrollAncestorY(
+  el: HTMLElement | null,
+): HTMLElement | null {
+  let node: HTMLElement | null = el?.parentElement ?? null;
+  while (node) {
+    const { overflowY } = getComputedStyle(node);
+    if (
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflowY === "overlay"
+    ) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
 type CheckEditorProps = {
   check: RawCheck;
   onChange: (next: RawCheck) => void;
@@ -157,6 +175,16 @@ export function CheckEditor({
       const root = rootRef.current;
       if (!root) return;
       const checkRect = root.getBoundingClientRect();
+      const scrollEl = overflowNearestScrollAncestorY(root);
+      if (scrollEl) {
+        const scrollRect = scrollEl.getBoundingClientRect();
+        const targetTop =
+          scrollRect.top + NEW_CHECK_SCROLL_ALIGN * scrollRect.height;
+        const delta = checkRect.top - targetTop;
+        if (Math.abs(delta) < 2) return;
+        scrollEl.scrollBy({ top: delta, behavior: "smooth" });
+        return;
+      }
       const targetTop = NEW_CHECK_SCROLL_ALIGN * window.innerHeight;
       const delta = checkRect.top - targetTop;
       if (Math.abs(delta) < 2) return;
@@ -171,10 +199,10 @@ export function CheckEditor({
         ref={rootRef}
         className="rounded-lg border border-zinc-200 bg-zinc-50/80 transition-[border-color] duration-150 ease-out group-focus-within:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/40 dark:group-focus-within:border-zinc-500"
       >
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-t-lg border-b border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium text-zinc-900 dark:text-zinc-100"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium text-zinc-900 dark:text-zinc-100 cursor-pointer"
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((o) => !o)}
