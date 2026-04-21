@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmPopover } from "@/components/ConfirmPopover";
 import {
     DIMENSIONS,
     stepsToStrings,
@@ -188,13 +189,22 @@ export function CheckEditor({
             </span>
           ) : null}
         </button>
-        <button
-          type="button"
-          className="shrink-0 rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          onClick={onRemoveCheck}
+        <ConfirmPopover
+          title="Remove check?"
+          description="Drops from topic; deletes if unused. Clears prerequisites."
+          confirmText="Remove"
+          cancelText="Cancel"
+          onConfirm={() => {
+            onRemoveCheck();
+          }}
         >
-          Remove check
-        </button>
+          <button
+            type="button"
+            className="shrink-0 rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            Remove check
+          </button>
+        </ConfirmPopover>
       </div>
       {open ? (
         <div
@@ -409,13 +419,22 @@ export function CheckEditor({
                         <option value="cleared">cleared</option>
                       </select>
                     </div>
-                    <button
-                      type="button"
-                      className="mb-1 rounded border border-red-200 px-2 py-1 text-xs text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                      onClick={() => removePrerequisite(i)}
+                    <ConfirmPopover
+                      title="Remove prerequisite?"
+                      description="Removes this parent-check link only."
+                      confirmText="Remove"
+                      cancelText="Cancel"
+                      onConfirm={() => {
+                        removePrerequisite(i);
+                      }}
                     >
-                      Remove
-                    </button>
+                      <button
+                        type="button"
+                        className="mb-1 rounded border border-red-200 px-2 py-1 text-xs text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
+                      >
+                        Remove
+                      </button>
+                    </ConfirmPopover>
                   </li>
                 ))}
               </ul>
@@ -499,13 +518,23 @@ export function CheckEditor({
                 </div>
               </fieldset>
             </div>
-            <button
-              type="button"
-              className="mt-2 text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
-              onClick={() => set({ evaluation_rule: undefined })}
+            <ConfirmPopover
+              title="Clear evaluation?"
+              description="Clears conditions. Keeps recommendation."
+              confirmText="Clear"
+              cancelText="Cancel"
+              onConfirm={() => {
+                set({ evaluation_rule: undefined });
+              }}
             >
-              Clear evaluation rule
-            </button>
+              <button
+                type="button"
+                className="mt-2 text-xs text-zinc-500 underline hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-zinc-300"
+                disabled={!check.evaluation_rule}
+              >
+                Clear evaluation rule
+              </button>
+            </ConfirmPopover>
           </div>
 
           {displayTechFields ? (
@@ -597,13 +626,22 @@ export function CheckEditor({
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <button
-                      type="button"
-                      className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
-                      onClick={() => set({ execution: undefined })}
+                    <ConfirmPopover
+                      title="Remove execution?"
+                      description="Removes scope, steps, exports. Re-add anytime."
+                      confirmText="Remove"
+                      cancelText="Cancel"
+                      onConfirm={() => {
+                        set({ execution: undefined });
+                      }}
                     >
-                      Remove execution block
-                    </button>
+                      <button
+                        type="button"
+                        className="text-xs text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
+                      >
+                        Remove execution block
+                      </button>
+                    </ConfirmPopover>
                   </div>
                 </div>
               ) : (

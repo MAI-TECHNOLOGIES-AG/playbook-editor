@@ -18,6 +18,7 @@ import {
   uniqueCheckSlug,
   uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
+import { ConfirmPopover } from "@/components/ConfirmPopover";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
 import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
 import {
@@ -533,10 +534,12 @@ export function PlaybookEditor() {
                 <p className="text-xs text-zinc-500">
                   Edit fields below. Changes save automatically in this browser.
                 </p>
-                <button
-                  type="button"
-                  className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                  onClick={() => {
+                <ConfirmPopover
+                  title="Delete topic?"
+                  description="Removes topic-only checks; checks used elsewhere stay."
+                  confirmText="Delete"
+                  cancelText="Cancel"
+                  onConfirm={() => {
                     const sid = selectedTopicId;
                     if (!sid) return;
                     setData((d) => {
@@ -552,8 +555,13 @@ export function PlaybookEditor() {
                     });
                   }}
                 >
-                  Delete topic
-                </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
+                  >
+                    Delete topic
+                  </button>
+                </ConfirmPopover>
               </div>
               {orphanedCheckIds.length > 0 ? (
                 <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
