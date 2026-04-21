@@ -1,34 +1,73 @@
 "use client";
 
+import { ConfirmPopover } from "@/components/ConfirmPopover";
+import {
+    DIMENSIONS,
+    emptyCheck,
+    emptyPlaybook,
+    emptyTopic,
+    ensureUniqueCheckOwnership,
+    isPlaybookData,
+    LOCAL_STORAGE_HISTORY_KEY,
+    LOCAL_STORAGE_KEY,
+    type PlaybookData,
+    resolveTopicChecks,
+    uniqueCheckSlug,
+    uniqueTopicSlug,
+} from "@/components/playbook-editor/playbook-data";
+import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
+import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
+import {
+    type UndoHistory,
+    useUndoableState,
+} from "@/hooks/use-undoable-state";
+import {
+    readLocalStorageJson,
+    writeLocalStorageJson,
+} from "@/lib/local-storage";
+import type { RawCheck, RawTopic } from "@/playbook/playbook";
+import type { Dimension } from "@/playbook/types";
 import yaml from "js-yaml";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import {
-  DIMENSIONS,
-  emptyCheck,
-  emptyPlaybook,
-  emptyTopic,
-  ensureUniqueCheckOwnership,
-  isPlaybookData,
-  LOCAL_STORAGE_KEY,
-  type PlaybookData,
-  resolveTopicChecks,
-  uniqueCheckSlug,
-  uniqueTopicSlug,
-} from "@/components/playbook-editor/playbook-data";
-import { ConfirmPopover } from "@/components/ConfirmPopover";
-import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
-import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
-import {
-  readLocalStorageJson,
-  writeLocalStorageJson,
-} from "@/lib/local-storage";
-import type { RawCheck, RawTopic } from "@/playbook/playbook";
-import type { Dimension } from "@/playbook/types";
 
 const DISPLAY_TECH_FIELDS_STORAGE_KEY = "playbook-editor-display-tech-fields";
+
+const PLAYBOOK_UNDO_STEPS = 50;
+
+function parseStoredHistory(raw: string): UndoHistory<PlaybookData> | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const o = parsed as Record<string, unknown>;
+    const pastRaw = o.past;
+    const futureRaw = o.future;
+    const presentRaw = o.present;
+    if (!Array.isArray(pastRaw) || !Array.isArray(futureRaw)) return null;
+    const past: PlaybookData[] = [];
+    for (const item of pastRaw) {
+      if (!isPlaybookData(item)) return null;
+      past.push(ensureUniqueCheckOwnership(item));
+    }
+    const future: PlaybookData[] = [];
+    for (const item of futureRaw) {
+      if (!isPlaybookData(item)) return null;
+      future.push(ensureUniqueCheckOwnership(item));
+    }
+    if (presentRaw === null || presentRaw === undefined) return null;
+    if (!isPlaybookData(presentRaw)) return null;
+    const present = ensureUniqueCheckOwnership(presentRaw);
+    return {
+      past: past.slice(-PLAYBOOK_UNDO_STEPS),
+      present,
+      future,
+    };
+  } catch {
+    return null;
+  }
+}
 
 function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
@@ -109,6 +148,48 @@ function groupTopicsByDimension(
   return groups;
 }
 
+function UndoIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <title>Undo</title>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+      />
+    </svg>
+  );
+}
+
+function RedoIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <title>Redo</title>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
+      />
+    </svg>
+  );
+}
+
 function LogoutIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -132,7 +213,8 @@ function LogoutIcon({ className }: { className?: string }) {
 
 export function PlaybookEditor() {
   const router = useRouter();
-  const [data, setData] = useState<PlaybookData | null>(null);
+  const [data, setData, { undo, redo, canUndo, canRedo, restore, history }] =
+    useUndoableState<PlaybookData>(PLAYBOOK_UNDO_STEPS);
   const [hydrated, setHydrated] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [focusTopicNameFieldSignal, setFocusTopicNameFieldSignal] = useState(0);
@@ -147,30 +229,76 @@ export function PlaybookEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let initial: PlaybookData = emptyPlaybook();
+    let fromHistory: UndoHistory<PlaybookData> | null = null;
     try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        if (isPlaybookData(parsed))
-          initial = ensureUniqueCheckOwnership(parsed);
-      }
+      const histRaw = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
+      if (histRaw) fromHistory = parseStoredHistory(histRaw);
     } catch {
-      /* keep empty */
+      /* keep legacy */
     }
-    setData(initial);
-    setSelectedTopicId(initial.diligence_topics[0]?.id ?? null);
+
+    if (fromHistory && fromHistory.present !== null) {
+      restore(fromHistory);
+      setSelectedTopicId(
+        fromHistory.present.diligence_topics[0]?.id ?? null,
+      );
+    } else {
+      let initial: PlaybookData = emptyPlaybook();
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (raw) {
+          const parsed: unknown = JSON.parse(raw);
+          if (isPlaybookData(parsed))
+            initial = ensureUniqueCheckOwnership(parsed);
+        }
+      } catch {
+        /* keep empty */
+      }
+      restore({ past: [], present: initial, future: [] });
+      setSelectedTopicId(initial.diligence_topics[0]?.id ?? null);
+    }
     setHydrated(true);
-  }, []);
+  }, [restore]);
 
   useEffect(() => {
-    if (!hydrated || !data) return;
+    if (!hydrated || data === null) return;
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(
+        LOCAL_STORAGE_HISTORY_KEY,
+        JSON.stringify(history),
+      );
     } catch {
       /* quota */
     }
-  }, [data, hydrated]);
+  }, [data, hydrated, history]);
+
+  useEffect(() => {
+    if (!data) return;
+    if (selectedTopicId === null) return;
+    const exists = data.diligence_topics.some((t) => t.id === selectedTopicId);
+    if (!exists) {
+      setSelectedTopicId(data.diligence_topics[0]?.id ?? null);
+    }
+  }, [data, selectedTopicId]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof HTMLElement) {
+        if (t.isContentEditable) return;
+        const tag = t.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+      }
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.key.toLowerCase() !== "z") return;
+      if (e.shiftKey) redo();
+      else undo();
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo]);
 
   const dimensionGroups = useMemo(
     () => (data ? groupTopicsByDimension(data.diligence_topics) : null),
@@ -213,7 +341,7 @@ export function PlaybookEditor() {
       });
       if (next.id !== sid) setSelectedTopicId(next.id);
     },
-    [selectedTopicId],
+    [selectedTopicId, setData],
   );
 
   const handleCheckChange = useCallback((checkId: string, next: RawCheck) => {
@@ -226,7 +354,7 @@ export function PlaybookEditor() {
         prev === checkId ? next.id : prev,
       );
     }
-  }, []);
+  }, [setData]);
 
   const handleRemoveCheckFromTopic = useCallback(
     (checkId: string) => {
@@ -249,7 +377,7 @@ export function PlaybookEditor() {
         return next;
       });
     },
-    [selectedTopicId],
+    [selectedTopicId, setData],
   );
 
   const handleAddNewCheck = useCallback(() => {
@@ -283,7 +411,7 @@ export function PlaybookEditor() {
       setExpandCheckLabelTargetId(newCheckId);
       setExpandCheckLabelToken((t) => t + 1);
     }
-  }, [selectedTopicId]);
+  }, [selectedTopicId, setData]);
 
   const addTopicUnderDimension = useCallback((dimension: Dimension) => {
     let newTopicId: string | null = null;
@@ -310,7 +438,7 @@ export function PlaybookEditor() {
       setSelectedTopicId(newTopicId);
       setFocusTopicNameFieldSignal((n) => n + 1);
     }
-  }, []);
+  }, [setData]);
 
   const importFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -329,7 +457,7 @@ export function PlaybookEditor() {
           return;
         }
         const normalized = ensureUniqueCheckOwnership(loaded);
-        setData(normalized);
+        restore({ past: [], present: normalized, future: [] });
         setSelectedTopicId(normalized.diligence_topics[0]?.id ?? null);
       } catch (err) {
         setImportError(
@@ -338,7 +466,7 @@ export function PlaybookEditor() {
       }
     };
     reader.readAsText(file, "utf-8");
-  }, []);
+  }, [restore]);
 
   const exportYaml = useCallback(() => {
     if (!data) return;
@@ -356,10 +484,10 @@ export function PlaybookEditor() {
 
   const clearPlaybook = useCallback(() => {
     const fresh = emptyPlaybook();
-    setData(fresh);
+    restore({ past: [], present: fresh, future: [] });
     setSelectedTopicId(null);
     setImportError(null);
-  }, []);
+  }, [restore]);
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -383,6 +511,28 @@ export function PlaybookEditor() {
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               Playbook editor
             </h1>
+            <div className="flex items-center gap-0.5 rounded-md border border-zinc-200 bg-zinc-50/80 p-0.5 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded text-zinc-600 hover:bg-white hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+                onClick={undo}
+                disabled={!canUndo}
+                title="Undo (⌘Z)"
+                aria-label="Undo"
+              >
+                <UndoIcon className="size-4" />
+              </button>
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded text-zinc-600 hover:bg-white hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+                onClick={redo}
+                disabled={!canRedo}
+                title="Redo (⌘⇧Z)"
+                aria-label="Redo"
+              >
+                <RedoIcon className="size-4" />
+              </button>
+            </div>
             <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
               Version
               <input

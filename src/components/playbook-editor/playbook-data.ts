@@ -8,6 +8,9 @@ import type { Dimension } from "@/playbook/types";
 
 export const LOCAL_STORAGE_KEY = "playbook-editor-state";
 
+/** Full undo stack + present + redo stack */
+export const LOCAL_STORAGE_HISTORY_KEY = "playbook-editor-history";
+
 export const DIMENSIONS: Dimension[] = [
   "CORPORATE_GOVERNANCE",
   "OWNERSHIP",
