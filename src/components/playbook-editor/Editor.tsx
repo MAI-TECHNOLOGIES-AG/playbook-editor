@@ -11,6 +11,7 @@ import {
   ConfirmDialog,
   type ConfirmDialogHandle,
 } from "@/components/playbook-editor/ConfirmDialog";
+import { PlaybookImportIssuesDialog } from "@/components/playbook-editor/PlaybookImportIssuesDialog";
 import {
   DIMENSIONS,
   emptyCheck,
@@ -25,6 +26,7 @@ import {
   uniqueCheckSlug,
   uniqueTopicSlug,
 } from "@/components/playbook-editor/playbook-data";
+import { validatePlaybookForImport } from "@/components/playbook-editor/playbook-import-validation";
 import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
 import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
 import { Button } from "@/components/ui/button";
@@ -215,6 +217,10 @@ export function PlaybookEditor() {
     string | null
   >(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importValidation, setImportValidation] = useState<{
+    issues: string[];
+    document: unknown;
+  } | null>(null);
   const [displayTechFields, setDisplayTechFields] = useState(() =>
     readLocalStorageJson(DISPLAY_TECH_FIELDS_STORAGE_KEY, isBoolean, false),
   );
@@ -444,18 +450,23 @@ export function PlaybookEditor() {
       e.target.value = "";
       if (!file) return;
       setImportError(null);
+      setImportValidation(null);
       const reader = new FileReader();
       reader.onload = () => {
         try {
           const text = String(reader.result ?? "");
           const loaded = yaml.load(text);
-          if (!isPlaybookData(loaded)) {
-            setImportError(
-              "File is not a valid playbook (missing topics or checks).",
-            );
+          const issues = validatePlaybookForImport(loaded);
+          if (issues.length > 0) {
+            setImportValidation({ issues, document: loaded });
             return;
           }
-          const normalized = ensureUniqueCheckOwnership(loaded);
+          const parsed = loaded as PlaybookData;
+          const withVersion =
+            typeof parsed.version === "number"
+              ? { ...parsed, version: String(parsed.version) }
+              : parsed;
+          const normalized = ensureUniqueCheckOwnership(withVersion);
           restore({ past: [], present: normalized, future: [] });
           setSelectedTopicId(normalized.diligence_topics[0]?.id ?? null);
         } catch (err) {
@@ -488,6 +499,7 @@ export function PlaybookEditor() {
     restore({ past: [], present: fresh, future: [] });
     setSelectedTopicId(null);
     setImportError(null);
+    setImportValidation(null);
   }, [restore]);
 
   const handleLogout = useCallback(async () => {
@@ -774,6 +786,14 @@ export function PlaybookEditor() {
           )}
         </main>
       </div>
+      <PlaybookImportIssuesDialog
+        document={importValidation?.document}
+        issues={importValidation?.issues ?? []}
+        onOpenChange={(open) => {
+          if (!open) setImportValidation(null);
+        }}
+        open={importValidation !== null}
+      />
     </div>
   );
 }
