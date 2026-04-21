@@ -1,37 +1,47 @@
 "use client";
 
-import { ConfirmPopover } from "@/components/ConfirmPopover";
-import {
-    DIMENSIONS,
-    emptyCheck,
-    emptyPlaybook,
-    emptyTopic,
-    ensureUniqueCheckOwnership,
-    isPlaybookData,
-    LOCAL_STORAGE_HISTORY_KEY,
-    LOCAL_STORAGE_KEY,
-    type PlaybookData,
-    resolveTopicChecks,
-    uniqueCheckSlug,
-    uniqueTopicSlug,
-} from "@/components/playbook-editor/playbook-data";
-import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
-import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
-import {
-    type UndoHistory,
-    useUndoableState,
-} from "@/hooks/use-undoable-state";
-import {
-    readLocalStorageJson,
-    writeLocalStorageJson,
-} from "@/lib/local-storage";
-import type { RawCheck, RawTopic } from "@/playbook/playbook";
-import type { Dimension } from "@/playbook/types";
 import yaml from "js-yaml";
+import { LogOut, MoreVertical, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { ConfirmPopover } from "@/components/ConfirmPopover";
+import {
+  ConfirmDialog,
+  type ConfirmDialogHandle,
+} from "@/components/playbook-editor/ConfirmDialog";
+import {
+  DIMENSIONS,
+  emptyCheck,
+  emptyPlaybook,
+  emptyTopic,
+  ensureUniqueCheckOwnership,
+  isPlaybookData,
+  LOCAL_STORAGE_HISTORY_KEY,
+  LOCAL_STORAGE_KEY,
+  type PlaybookData,
+  resolveTopicChecks,
+  uniqueCheckSlug,
+  uniqueTopicSlug,
+} from "@/components/playbook-editor/playbook-data";
+import { TopicPanel } from "@/components/playbook-editor/TopicPanel";
+import { stringifyPlaybookData } from "@/components/playbook-editor/yaml-export";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { type UndoHistory, useUndoableState } from "@/hooks/use-undoable-state";
+import {
+  readLocalStorageJson,
+  writeLocalStorageJson,
+} from "@/lib/local-storage";
+import type { RawCheck, RawTopic } from "@/playbook/playbook";
+import type { Dimension } from "@/playbook/types";
 
 const DISPLAY_TECH_FIELDS_STORAGE_KEY = "playbook-editor-display-tech-fields";
 
@@ -190,27 +200,6 @@ function RedoIcon({ className }: { className?: string }) {
   );
 }
 
-function LogoutIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className={className}
-      aria-hidden
-    >
-      <title>Log out</title>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
-      />
-    </svg>
-  );
-}
-
 export function PlaybookEditor() {
   const router = useRouter();
   const [
@@ -230,6 +219,7 @@ export function PlaybookEditor() {
     readLocalStorageJson(DISPLAY_TECH_FIELDS_STORAGE_KEY, isBoolean, false),
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const clearPlaybookConfirmRef = useRef<ConfirmDialogHandle>(null);
 
   useEffect(() => {
     let fromHistory: UndoHistory<PlaybookData> | null = null;
@@ -242,9 +232,7 @@ export function PlaybookEditor() {
 
     if (fromHistory && fromHistory.present !== null) {
       restore(fromHistory);
-      setSelectedTopicId(
-        fromHistory.present.diligence_topics[0]?.id ?? null,
-      );
+      setSelectedTopicId(fromHistory.present.diligence_topics[0]?.id ?? null);
     } else {
       let initial: PlaybookData = emptyPlaybook();
       try {
@@ -267,10 +255,7 @@ export function PlaybookEditor() {
     if (!hydrated || data === null) return;
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(
-        LOCAL_STORAGE_HISTORY_KEY,
-        JSON.stringify(history),
-      );
+      localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(history));
     } catch {
       /* quota */
     }
@@ -347,17 +332,20 @@ export function PlaybookEditor() {
     [selectedTopicId, patchData],
   );
 
-  const handleCheckChange = useCallback((checkId: string, next: RawCheck) => {
-    patchData((d) => {
-      if (!d) return d;
-      return applyCheckUpdate(d, checkId, next);
-    });
-    if (next.id !== checkId) {
-      setExpandCheckLabelTargetId((prev) =>
-        prev === checkId ? next.id : prev,
-      );
-    }
-  }, [patchData]);
+  const handleCheckChange = useCallback(
+    (checkId: string, next: RawCheck) => {
+      patchData((d) => {
+        if (!d) return d;
+        return applyCheckUpdate(d, checkId, next);
+      });
+      if (next.id !== checkId) {
+        setExpandCheckLabelTargetId((prev) =>
+          prev === checkId ? next.id : prev,
+        );
+      }
+    },
+    [patchData],
+  );
 
   const handleRemoveCheckFromTopic = useCallback(
     (checkId: string) => {
@@ -416,60 +404,70 @@ export function PlaybookEditor() {
     }
   }, [selectedTopicId, setData]);
 
-  const addTopicUnderDimension = useCallback((dimension: Dimension) => {
-    let newTopicId: string | null = null;
-    flushSync(() => {
-      setData((d) => {
-        if (!d) return d;
-        const defaultName = "New diligence topic";
-        const id = uniqueTopicSlug(defaultName, d.diligence_topics, undefined);
-        newTopicId = id;
-        return {
-          ...d,
-          diligence_topics: [
-            ...d.diligence_topics,
-            emptyTopic({
-              id,
-              name: defaultName,
-              dimensions: [dimension],
-            }),
-          ],
-        };
-      });
-    });
-    if (newTopicId) {
-      setSelectedTopicId(newTopicId);
-      setFocusTopicNameFieldSignal((n) => n + 1);
-    }
-  }, [setData]);
-
-  const importFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setImportError(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const text = String(reader.result ?? "");
-        const loaded = yaml.load(text);
-        if (!isPlaybookData(loaded)) {
-          setImportError(
-            "File is not a valid playbook (missing topics or checks).",
+  const addTopicUnderDimension = useCallback(
+    (dimension: Dimension) => {
+      let newTopicId: string | null = null;
+      flushSync(() => {
+        setData((d) => {
+          if (!d) return d;
+          const defaultName = "New diligence topic";
+          const id = uniqueTopicSlug(
+            defaultName,
+            d.diligence_topics,
+            undefined,
           );
-          return;
-        }
-        const normalized = ensureUniqueCheckOwnership(loaded);
-        restore({ past: [], present: normalized, future: [] });
-        setSelectedTopicId(normalized.diligence_topics[0]?.id ?? null);
-      } catch (err) {
-        setImportError(
-          err instanceof Error ? err.message : "Could not parse YAML.",
-        );
+          newTopicId = id;
+          return {
+            ...d,
+            diligence_topics: [
+              ...d.diligence_topics,
+              emptyTopic({
+                id,
+                name: defaultName,
+                dimensions: [dimension],
+              }),
+            ],
+          };
+        });
+      });
+      if (newTopicId) {
+        setSelectedTopicId(newTopicId);
+        setFocusTopicNameFieldSignal((n) => n + 1);
       }
-    };
-    reader.readAsText(file, "utf-8");
-  }, [restore]);
+    },
+    [setData],
+  );
+
+  const importFile = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      setImportError(null);
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = String(reader.result ?? "");
+          const loaded = yaml.load(text);
+          if (!isPlaybookData(loaded)) {
+            setImportError(
+              "File is not a valid playbook (missing topics or checks).",
+            );
+            return;
+          }
+          const normalized = ensureUniqueCheckOwnership(loaded);
+          restore({ past: [], present: normalized, future: [] });
+          setSelectedTopicId(normalized.diligence_topics[0]?.id ?? null);
+        } catch (err) {
+          setImportError(
+            err instanceof Error ? err.message : "Could not parse YAML.",
+          );
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    },
+    [restore],
+  );
 
   const exportYaml = useCallback(() => {
     if (!data) return;
@@ -594,29 +592,49 @@ export function PlaybookEditor() {
             >
               Export YAML
             </button>
-            <ConfirmPopover
+            <ConfirmDialog
+              ref={clearPlaybookConfirmRef}
               title="Clear playbook?"
               description="Replaces the current playbook with a blank one. Undo history for the cleared content will be lost."
               confirmText="Clear"
               cancelText="Cancel"
               onConfirm={clearPlaybook}
-            >
-              <button
-                type="button"
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                Clear playbook
-              </button>
-            </ConfirmPopover>
-            <button
-              type="button"
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
-              onClick={handleLogout}
-              title="Log out"
-              aria-label="Log out"
-            >
-              <LogoutIcon className="size-4" />
-            </button>
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  title="More options"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-44">
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    clearPlaybookConfirmRef.current?.open();
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                  Clear playbook
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleLogout();
+                  }}
+                >
+                  <LogOut className="size-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
