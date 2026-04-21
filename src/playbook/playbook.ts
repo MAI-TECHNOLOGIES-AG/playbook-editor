@@ -20,15 +20,9 @@
  * these constants directly.
  */
 
-import playbook from "./playbook.generated.json";
 import type {
-  Check,
-  CheckBasis,
-  CheckExecution,
-  CheckPrerequisite,
-  DiligenceTopic,
-  EvaluationRule,
-  FindingSeverity,
+    CheckBasis,
+    FindingSeverity
 } from "./types";
 
 // ============================================================================
@@ -81,85 +75,3 @@ export type RawPlaybook = {
   diligence_topics: RawTopic[];
   checks: RawCheck[];
 };
-
-// ============================================================================
-// Mappers (snake_case → camelCase, normalize block-scalar whitespace)
-// ============================================================================
-
-function trimMultiline(s: string): string {
-  // Yaml block scalars (`|`) preserve newlines. For our display strings we
-  // want a single clean line — collapse internal whitespace.
-  return s.replace(/\s+/g, " ").trim();
-}
-
-function mapPrerequisite(raw: RawCheckPrerequisite): CheckPrerequisite {
-  return {
-    checkId: raw.check_id,
-    requiredState: raw.required_state,
-  };
-}
-
-function mapEvaluationRule(raw: RawEvaluationRule): EvaluationRule {
-  return {
-    clearCondition: trimMultiline(raw.clear_condition),
-    findingCondition: trimMultiline(raw.finding_condition),
-  };
-}
-
-/**
- * Flatten YAML step objects `[{ step_1: "Do X" }, { step_2: "Do Y" }]`
- * into a plain string array `["Do X", "Do Y"]` for token-efficient
- * prompt rendering.
- */
-function flattenSteps(raw: RawExecutionStep[]): string[] {
-  return raw.map((obj) => Object.values(obj)[0]);
-}
-
-function mapExecution(raw: RawExecution): CheckExecution {
-  return {
-    scope: raw.scope,
-    targetList: raw.target_list,
-    contextExports: raw.context_exports,
-    steps: flattenSteps(raw.steps),
-  };
-}
-
-function mapCheck(raw: RawCheck): Check {
-  return {
-    id: raw.id,
-    label: raw.label,
-    description: trimMultiline(raw.description),
-    severity: raw.severity,
-    dimension: raw.dimension as Check["dimension"],
-    basis: raw.basis,
-    jurisdictions: raw.jurisdictions,
-    prerequisites: raw.prerequisites?.map(mapPrerequisite),
-    recommendation: raw.recommendation
-      ? trimMultiline(raw.recommendation)
-      : undefined,
-    evaluationRule: raw.evaluation_rule
-      ? mapEvaluationRule(raw.evaluation_rule)
-      : undefined,
-    execution: raw.execution ? mapExecution(raw.execution) : undefined,
-  };
-}
-
-function mapTopic(raw: RawTopic): DiligenceTopic {
-  return {
-    id: raw.id,
-    name: raw.name,
-    description: trimMultiline(raw.description),
-    dimensions: raw.dimensions as DiligenceTopic["dimensions"],
-    checkIds: raw.checks,
-  };
-}
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-const data = playbook as unknown as RawPlaybook;
-
-export const CHECKS: Check[] = data.checks.map(mapCheck);
-export const DILIGENCE_TOPICS: DiligenceTopic[] =
-  data.diligence_topics.map(mapTopic);
