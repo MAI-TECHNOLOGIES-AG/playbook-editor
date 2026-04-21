@@ -213,8 +213,11 @@ function LogoutIcon({ className }: { className?: string }) {
 
 export function PlaybookEditor() {
   const router = useRouter();
-  const [data, setData, { undo, redo, canUndo, canRedo, restore, history }] =
-    useUndoableState<PlaybookData>(PLAYBOOK_UNDO_STEPS);
+  const [
+    data,
+    setData,
+    { undo, redo, canUndo, canRedo, restore, history, patch: patchData },
+  ] = useUndoableState<PlaybookData>(PLAYBOOK_UNDO_STEPS);
   const [hydrated, setHydrated] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [focusTopicNameFieldSignal, setFocusTopicNameFieldSignal] = useState(0);
@@ -330,7 +333,7 @@ export function PlaybookEditor() {
     (next: RawTopic) => {
       const sid = selectedTopicId;
       if (!sid) return;
-      setData((d) => {
+      patchData((d) => {
         if (!d) return d;
         return {
           ...d,
@@ -341,11 +344,11 @@ export function PlaybookEditor() {
       });
       if (next.id !== sid) setSelectedTopicId(next.id);
     },
-    [selectedTopicId, setData],
+    [selectedTopicId, patchData],
   );
 
   const handleCheckChange = useCallback((checkId: string, next: RawCheck) => {
-    setData((d) => {
+    patchData((d) => {
       if (!d) return d;
       return applyCheckUpdate(d, checkId, next);
     });
@@ -354,7 +357,7 @@ export function PlaybookEditor() {
         prev === checkId ? next.id : prev,
       );
     }
-  }, [setData]);
+  }, [patchData]);
 
   const handleRemoveCheckFromTopic = useCallback(
     (checkId: string) => {
@@ -540,7 +543,7 @@ export function PlaybookEditor() {
                 className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 font-mono text-sm dark:border-zinc-600 dark:bg-zinc-900"
                 value={data.version ?? ""}
                 onChange={(e) =>
-                  setData((d) =>
+                  patchData((d) =>
                     d ? { ...d, version: e.target.value || undefined } : d,
                   )
                 }
