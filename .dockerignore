@@ -1,0 +1,16 @@
+.git
+.gitignore
+.next
+node_modules
+.env*
+coverage
+*.pem
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+.DS_Store
+README.md
+Dockerfile
+.dockerignore
+tests
+playbooks
