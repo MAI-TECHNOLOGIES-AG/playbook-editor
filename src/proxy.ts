@@ -7,7 +7,7 @@ import {
   isAuthEnabled,
 } from "@/lib/auth-token";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const password = process.env.AUTH_PASSWORD;
   if (!isAuthEnabled() || !password) {
     return NextResponse.next();
